@@ -1,6 +1,13 @@
 <?php
 namespace Awethemes\WP_Object;
 
+/**
+ * Trait Object_Metadata
+ *
+ * @property array $attributes
+ *
+ * @package Awethemes\WP_Object
+ */
 trait Object_Metadata {
 	/**
 	 * Type of object metadata is for (e.g., term, post).
@@ -58,7 +65,7 @@ trait Object_Metadata {
 		$metadata = $this->get_metadata();
 
 		if ( ! array_key_exists( $key, $metadata ) ) {
-			return;
+			return null;
 		}
 
 		return $metadata[ $key ];
@@ -69,6 +76,7 @@ trait Object_Metadata {
 	 *
 	 * @param string $meta_key   Metadata key.
 	 * @param mixed  $meta_value Metadata value. Must be serializable if non-scalar.
+	 * @return int|false
 	 */
 	public function add_meta( $meta_key, $meta_value ) {
 		return add_metadata( $this->meta_type, $this->get_id(), $meta_key, $meta_value, true );
@@ -243,7 +251,7 @@ trait Object_Metadata {
 	 */
 	protected function perform_update_metadata( array $changes ) {
 		if ( ! $this->meta_type ) {
-			return;
+			return null;
 		}
 
 		$mapping = $this->get_mapping();
@@ -254,7 +262,7 @@ trait Object_Metadata {
 
 		// Don't do anything if nothing changes.
 		if ( empty( $changes ) ) {
-			return;
+			return null;
 		}
 
 		$updated = [];

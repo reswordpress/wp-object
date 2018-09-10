@@ -45,7 +45,7 @@ trait Object_Attributes {
 
 		// Return a "null" if not found attribute.
 		if ( ! array_key_exists( $key, $this->attributes ) ) {
-			return;
+			return null;
 		}
 
 		// The value should be returned.
@@ -292,9 +292,13 @@ trait Object_Attributes {
 
 		if ( $current === $original ) {
 			return true;
-		} elseif ( is_null( $current ) ) {
+		}
+
+		if ( is_null( $current ) ) {
 			return false;
-		} elseif ( $this->has_cast( $key ) ) {
+		}
+
+		if ( $this->has_cast( $key ) ) {
 			return $this->cast_attribute( $key, $current ) === $this->cast_attribute( $key, $original );
 		}
 
@@ -336,7 +340,7 @@ trait Object_Attributes {
 	protected function get_cast_type( $key ) {
 		$casts = $this->get_casts();
 
-		return trim( strtolower( $casts[ $key ] ) );
+		return strtolower( trim( $casts[ $key ] ) );
 	}
 
 	/**

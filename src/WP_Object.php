@@ -4,6 +4,14 @@ namespace Awethemes\WP_Object;
 use ArrayAccess;
 use JsonSerializable;
 
+/**
+ * Class WP_Object
+ *
+ * @property array $metadata
+ * @property array $attributes
+ *
+ * @package Awethemes\WP_Object
+ */
 abstract class WP_Object implements ArrayAccess, JsonSerializable {
 	use Object_Attributes,
 		Object_Metadata;
@@ -92,13 +100,21 @@ abstract class WP_Object implements ArrayAccess, JsonSerializable {
 	public static function parse_object_id( $object ) {
 		if ( is_numeric( $object ) && $object > 0 ) {
 			return (int) $object;
-		} elseif ( ! empty( $object->ID ) ) {
+		}
+
+		if ( ! empty( $object->ID ) ) {
 			return (int) $object->ID;
-		} elseif ( ! empty( $object->term_id ) ) {
+		}
+
+		if ( ! empty( $object->term_id ) ) {
 			return (int) $object->term_id;
-		} elseif ( $object instanceof WP_Object ) {
+		}
+
+		if ( $object instanceof self ) {
 			return $object->get_id();
 		}
+
+		return null;
 	}
 
 	/**
@@ -350,13 +366,13 @@ abstract class WP_Object implements ArrayAccess, JsonSerializable {
 		// If the object doesn't exist, there is nothing to delete
 		// so we'll just return immediately and not do anything else.
 		if ( ! $this->exists() ) {
-			return;
+			return null;
 		}
 
 		// If the "prev_delete" filter returns false we'll bail out of the delete
 		// and just return. Indicating that the delete failed.
 		if ( false === apply_filters( $this->prefix( 'prev_delete' ), true ) ) {
-			return;
+			return null;
 		}
 
 		/**
@@ -401,7 +417,7 @@ abstract class WP_Object implements ArrayAccess, JsonSerializable {
 				return ( ! is_wp_error( $delete ) && true === $delete );
 
 			case 'post':
-				if ( ! $force && 'trash' !== get_post_status( $this->get_id() ) && EMPTY_TRASH_DAYS ) {
+				if ( ! $force && EMPTY_TRASH_DAYS && 'trash' !== get_post_status( $this->get_id() ) ) {
 					$delete = wp_trash_post( $this->get_id() );
 				} else {
 					$delete = wp_delete_post( $this->get_id(), true );
@@ -490,8 +506,8 @@ abstract class WP_Object implements ArrayAccess, JsonSerializable {
 	protected function update_the_post( array $post_data ) {
 		global $wpdb;
 
-		if ( ! $this->exists() || empty( $post_data ) ) {
-			return;
+		if ( empty( $post_data ) || ! $this->exists() ) {
+			return null;
 		}
 
 		if ( doing_action( 'save_post' ) || 0 === strpos( current_action(), 'save_post' ) ) {
