@@ -1,14 +1,14 @@
 <?php
-namespace Awethemes\WP_Object;
+namespace Awethemes\WP_Object\Traits;
 
 /**
- * Trait Object_Metadata
+ * Trait Has_Metadata
  *
  * @property array $attributes
  *
  * @package Awethemes\WP_Object
  */
-trait Object_Metadata {
+trait Has_Metadata {
 	/**
 	 * Type of object metadata is for (e.g., term, post).
 	 *

@@ -1,7 +1,7 @@
 <?php
-namespace Awethemes\WP_Object;
+namespace Awethemes\WP_Object\Traits;
 
-trait Object_Attributes {
+trait Has_Attributes {
 	/**
 	 * The attributes for this object.
 	 *

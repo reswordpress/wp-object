@@ -1,9 +1,6 @@
 <?php
 namespace Awethemes\WP_Object;
 
-use ArrayAccess;
-use JsonSerializable;
-
 /**
  * Class WP_Object
  *
@@ -12,9 +9,9 @@ use JsonSerializable;
  *
  * @package Awethemes\WP_Object
  */
-abstract class WP_Object implements ArrayAccess, JsonSerializable {
-	use Object_Attributes,
-		Object_Metadata;
+abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
+	use Traits\Has_Attributes,
+		Traits\Has_Metadata;
 
 	/**
 	 * Name of object type.
