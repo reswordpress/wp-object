@@ -1,14 +1,6 @@
 <?php
 namespace Awethemes\WP_Object;
 
-/**
- * Class WP_Object
- *
- * @property array $metadata
- * @property array $attributes
- *
- * @package Awethemes\WP_Object
- */
 abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	use Traits\Has_Attributes,
 		Traits\Has_Metadata;
@@ -16,25 +8,9 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	/**
 	 * Name of object type.
 	 *
-	 * Normally is name of custom-post-type or custom-taxonomy.
-	 *
 	 * @var string
 	 */
-	protected $object_type = 'post';
-
-	/**
-	 * WordPress type for object, Ex: "post" and "term".
-	 *
-	 * @var string
-	 */
-	protected $wp_type = 'post';
-
-	/**
-	 * Prefix for hooks.
-	 *
-	 * @var string
-	 */
-	protected $prefix = 'wp';
+	protected $object_type;
 
 	/**
 	 * ID for this object.
@@ -70,7 +46,7 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	 * @param mixed $object Object ID we'll working for.
 	 */
 	public function __construct( $object = 0 ) {
-		$this->id = static::parse_object_id( $object );
+		$this->id = Utils::parse_object_id( $object );
 
 		// Setup the wp core object instance.
 		if ( ! is_null( $this->id ) ) {
@@ -89,32 +65,6 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * Parse the object_id.
-	 *
-	 * @param  mixed $object The object.
-	 * @return int|null
-	 */
-	public static function parse_object_id( $object ) {
-		if ( is_numeric( $object ) && $object > 0 ) {
-			return (int) $object;
-		}
-
-		if ( ! empty( $object->ID ) ) {
-			return (int) $object->ID;
-		}
-
-		if ( ! empty( $object->term_id ) ) {
-			return (int) $object->term_id;
-		}
-
-		if ( $object instanceof self ) {
-			return $object->get_id();
-		}
-
-		return null;
-	}
-
-	/**
 	 * Setup the object attributes.
 	 *
 	 * @return void
@@ -126,23 +76,7 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	 *
 	 * @return void
 	 */
-	protected function setup_instance() {
-		switch ( $this->wp_type ) {
-			case 'post':
-				$wp_post = get_post( $this->get_id() );
-				if ( ! is_null( $wp_post ) && get_post_type( $wp_post->ID ) === $this->object_type ) {
-					$this->set_instance( $wp_post );
-				}
-				break;
-
-			case 'term':
-				$wp_term = get_term( $this->get_id(), $this->object_type );
-				if ( ! is_null( $wp_term ) && ! is_wp_error( $wp_term ) ) {
-					$this->set_instance( $wp_term );
-				}
-				break;
-		}
-	}
+	abstract protected function setup_instance();
 
 	/**
 	 * Update the object.
@@ -291,10 +225,6 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	/**
 	 * Run perform update object.
 	 *
-	 * @see wp_update_post()
-	 * @see wp_update_term()
-	 * @see $this->update_the_post()
-	 *
 	 * @param  array $dirty The attributes has been modified.
 	 * @return bool|void
 	 */
@@ -345,9 +275,6 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 
 	/**
 	 * Run perform insert object into database.
-	 *
-	 * @see wp_insert_post()
-	 * @see wp_insert_term()
 	 *
 	 * @return int|void
 	 */
@@ -407,23 +334,65 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	 * @param  bool $force Force delete or not.
 	 * @return bool
 	 */
-	protected function perform_delete( $force ) {
-		switch ( $this->wp_type ) {
-			case 'term':
-				$delete = wp_delete_term( $this->get_id(), $this->object_type );
-				return ( ! is_wp_error( $delete ) && true === $delete );
+	abstract protected function perform_delete( $force );
 
-			case 'post':
-				if ( ! $force && EMPTY_TRASH_DAYS && 'trash' !== get_post_status( $this->get_id() ) ) {
-					$delete = wp_trash_post( $this->get_id() );
-				} else {
-					$delete = wp_delete_post( $this->get_id(), true );
-				}
+	/**
+	 * Get all of the models.
+	 *
+	 * @return \Awethemes\WP_Object\Collection static[]
+	 */
+	public static function all() {
+		return ( new static )->new_builder()->limit( -1 )->get();
+	}
 
-				return ( ! is_null( $delete ) && ! is_wp_error( $delete ) && false !== $delete );
-		}
+	/**
+	 * Begin querying the model.
+	 *
+	 * @param array $query The query.
+	 *
+	 * @return \Awethemes\WP_Object\Builder
+	 */
+	public static function query( $query = [] ) {
+		return ( new static )->new_builder( $query );
+	}
 
-		return false;
+	/**
+	 * Get a new query builder for the model's.
+	 *
+	 * @param array $query_vars The query.
+	 *
+	 * @return \Awethemes\WP_Object\Builder
+	 */
+	public function new_builder( $query_vars = [] ) {
+		return ( new Builder( $query_vars ) )->set_model( $this );
+	}
+
+	/**
+	 * Get a new query instance.
+	 *
+	 * @return \Awethemes\WP_Object\Query\Query
+	 */
+	public function new_query() {
+		throw new \RuntimeException( 'The "' . get_class( $this ) . '" does not support query.' );
+	}
+
+	/**
+	 * Create a new Collection instance.
+	 *
+	 * @param  mixed $models An array of models.
+	 * @return \Awethemes\WP_Object\Collection
+	 */
+	public function new_collection( $models ) {
+		return ( new Collection( $models ) )->map_into( get_class( $this ) );
+	}
+
+	/**
+	 * Returns the WP internal type, e.g: "post", "term", "user", etc.
+	 *
+	 * @return string
+	 */
+	public function get_wp_type() {
+		return 'post';
 	}
 
 	/**
@@ -472,50 +441,7 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	 * @return string
 	 */
 	protected function prefix( $hook_name ) {
-		return sprintf( '%s/%s/%s', $this->prefix, $this->object_type, $hook_name );
-	}
-
-	/**
-	 * Helper: Get terms as IDs from a taxonomy.
-	 *
-	 * @param  string $taxonomy Taxonomy name.
-	 * @return array
-	 */
-	protected function get_term_ids( $taxonomy ) {
-		$terms = get_the_terms( $this->get_id(), $taxonomy );
-
-		if ( false === $terms || is_wp_error( $terms ) ) {
-			return [];
-		}
-
-		return wp_list_pluck( $terms, 'term_id' );
-	}
-
-	/**
-	 * Helper: Safely update a wordpress post.
-	 *
-	 * When updating a post, to prevent infinite loops, use $wpdb to update data,
-	 * since 'wp_update_post' spawns more calls to the save_post action.
-	 *
-	 * @param  array $post_data An array post data to update.
-	 * @return bool|null
-	 */
-	protected function update_the_post( array $post_data ) {
-		global $wpdb;
-
-		if ( empty( $post_data ) || ! $this->exists() ) {
-			return null;
-		}
-
-		if ( doing_action( 'save_post' ) || 0 === strpos( current_action(), 'save_post' ) ) {
-			$updated = $wpdb->update( $wpdb->posts, $post_data, [ 'ID' => $this->get_id() ] );
-		} else {
-			$updated = wp_update_post( array_merge( [ 'ID' => $this->get_id() ], $post_data ) );
-		}
-
-		clean_post_cache( $this->get_id() );
-
-		return ( 0 !== $updated && false !== $updated );
+		return sprintf( 'wp_%s_%s', $this->object_type, $hook_name );
 	}
 
 	/**

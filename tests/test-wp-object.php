@@ -7,6 +7,8 @@ class WP_Object_Test extends WP_UnitTestCase {
 	 * Set up the test fixture.
 	 */
 	public function setUp() {
+		parent::setUp();
+
 		$this->got = $this->factory->post->create([
 			'post_title'   => 'Game of Thrones',
 			'post_excerpt' => 'Season 7',
