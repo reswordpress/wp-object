@@ -1,5 +1,4 @@
 <?php
-
 namespace Awethemes\WP_Object\Query;
 
 abstract class Abstract_Query implements Query {

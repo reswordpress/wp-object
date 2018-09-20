@@ -1,5 +1,4 @@
 <?php
-
 namespace Awethemes\WP_Object\Query;
 
 class Term_Query extends Abstract_Query {
