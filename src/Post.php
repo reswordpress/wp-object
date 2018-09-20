@@ -1,7 +1,7 @@
 <?php
 namespace Awethemes\WP_Object;
 
-abstract class Post extends WP_Object {
+class Post extends WP_Object {
 	/**
 	 * The WP_Post attributes.
 	 *
