@@ -34,7 +34,7 @@ class Utils {
 			return (int) $object->term_id;
 		}
 
-		if ( $object instanceof WP_Object ) {
+		if ( $object instanceof Model ) {
 			return $object->get_id();
 		}
 

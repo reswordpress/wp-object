@@ -3,9 +3,8 @@ namespace Awethemes\WP_Object;
 
 use Awethemes\WP_Object\Query\Builder;
 
-abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
-	use Traits\Has_Attributes,
-		Traits\Has_Metadata;
+abstract class Model implements \ArrayAccess, \JsonSerializable {
+	use Traits\Has_Attributes;
 
 	/**
 	 * Name of object type.
@@ -57,7 +56,6 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 
 			// If object mark exists, setup the attributes.
 			if ( $this->exists() ) {
-				$this->setup_metadata();
 				$this->setup();
 			}
 		}
@@ -154,9 +152,9 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	protected function finish_save() {
 		$this->clean_cache();
 
-		$this->perform_update_metadata(
+		/*$this->perform_update_metadata(
 			$this->recently_created ? $this->get_dirty() : $this->get_changes()
-		);
+		);*/
 
 		$this->resetup();
 	}
@@ -317,7 +315,7 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 			$this->exists = false;
 
 			/**
-			 * Fires after a WP_Object is deleted.
+			 * Fires after a Model is deleted.
 			 *
 			 * @param int $object_id Object ID was deleted.
 			 */

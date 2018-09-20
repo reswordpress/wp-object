@@ -1,7 +1,7 @@
 <?php
 namespace Awethemes\WP_Object\Query;
 
-use Awethemes\WP_Object\WP_Object;
+use Awethemes\WP_Object\Model;
 
 class Builder implements \ArrayAccess {
 	/**
@@ -21,7 +21,7 @@ class Builder implements \ArrayAccess {
 	/**
 	 * The model being queried.
 	 *
-	 * @var \Awethemes\WP_Object\WP_Object
+	 * @var \Awethemes\WP_Object\Model
 	 */
 	protected $model;
 
@@ -156,7 +156,7 @@ class Builder implements \ArrayAccess {
 	/**
 	 * Get the model instance being queried.
 	 *
-	 * @return \Awethemes\WP_Object\WP_Object
+	 * @return \Awethemes\WP_Object\Model
 	 */
 	public function get_model() {
 		if ( ! $this->model ) {
@@ -169,11 +169,11 @@ class Builder implements \ArrayAccess {
 	/**
 	 * Set a model instance for the model being queried.
 	 *
-	 * @param \Awethemes\WP_Object\WP_Object $model The model instance.
+	 * @param \Awethemes\WP_Object\Model $model The model instance.
 	 *
 	 * @return $this
 	 */
-	public function set_model( WP_Object $model ) {
+	public function set_model( Model $model ) {
 		$this->model = $model;
 
 		$this->query = $model->new_query();

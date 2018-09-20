@@ -1,7 +1,7 @@
 <?php
 namespace Awethemes\WP_Object\Relations;
 
-use Awethemes\WP_Object\WP_Object;
+use Awethemes\WP_Object\Model;
 
 class Taxonomy {
 	/**
@@ -14,7 +14,7 @@ class Taxonomy {
 	/**
 	 *
 	 *
-	 * @var \Awethemes\WP_Object\WP_Object
+	 * @var \Awethemes\WP_Object\Model
 	 */
 	protected $parent;
 
@@ -28,10 +28,10 @@ class Taxonomy {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                         $taxonomy
-	 * @param \Awethemes\WP_Object\WP_Object $parent
+	 * @param string                     $taxonomy
+	 * @param \Awethemes\WP_Object\Model $parent
 	 */
-	public function __construct( $taxonomy, WP_Object $parent ) {
+	public function __construct( $taxonomy, Model $parent ) {
 		$this->taxonomy = $taxonomy;
 		$this->parent = $parent;
 	}
