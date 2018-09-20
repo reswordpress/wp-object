@@ -16,6 +16,7 @@
     ],
     "require": {
         "php": ">=5.6.0",
+        "mrjgreen/database": "^2.5",
         "tightenco/collect": "5.4.*"
     },
     "require-dev": {
