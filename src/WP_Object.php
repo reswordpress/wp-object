@@ -1,6 +1,8 @@
 <?php
 namespace Awethemes\WP_Object;
 
+use Awethemes\WP_Object\Query\Builder;
+
 abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	use Traits\Has_Attributes,
 		Traits\Has_Metadata;
@@ -350,7 +352,7 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	 *
 	 * @param array $query The query.
 	 *
-	 * @return \Awethemes\WP_Object\Builder
+	 * @return \Awethemes\WP_Object\Query\Builder
 	 */
 	public static function query( $query = [] ) {
 		return ( new static )->new_builder( $query );
@@ -361,7 +363,7 @@ abstract class WP_Object implements \ArrayAccess, \JsonSerializable {
 	 *
 	 * @param array $query_vars The query.
 	 *
-	 * @return \Awethemes\WP_Object\Builder
+	 * @return \Awethemes\WP_Object\Query\Builder
 	 */
 	public function new_builder( $query_vars = [] ) {
 		return ( new Builder( $query_vars ) )->set_model( $this );

@@ -1,7 +1,7 @@
 <?php
-namespace Awethemes\WP_Object;
+namespace Awethemes\WP_Object\Query;
 
-use Awethemes\WP_Object\Query\Query;
+use Awethemes\WP_Object\WP_Object;
 
 class Builder implements \ArrayAccess {
 	/**
