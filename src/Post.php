@@ -3,6 +3,13 @@ namespace Awethemes\WP_Object;
 
 class Post extends Model {
 	/**
+	 * The table associated with the model.
+	 *
+	 * @var string
+	 */
+	protected $table = 'posts';
+
+	/**
 	 * The WP_Post attributes.
 	 *
 	 * @var array

@@ -1,5 +1,5 @@
 <?php
-namespace Awethemes\WP_Object\Traits;
+namespace Awethemes\WP_Object\Concerns;
 
 /**
  * Trait Has_Metadata

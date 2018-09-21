@@ -1,6 +1,6 @@
 <?php
 
-use Awethemes\WP_Object\WP_Object;
+use Awethemes\WP_Object\Model;
 
 class WP_Object_Test extends WP_UnitTestCase {
 	/**
@@ -19,7 +19,7 @@ class WP_Object_Test extends WP_UnitTestCase {
 	}
 
 	public function testGetDefault() {
-		$object = new AweBooking_Post_WP_Object( 0 );
+		$object = new AweBooking_Post_Model( 0 );
 
 		$this->assertEmpty($object['title']);
 		$this->assertEmpty($object['description']);
@@ -28,7 +28,7 @@ class WP_Object_Test extends WP_UnitTestCase {
 	}
 
 	public function testSetAndSet() {
-		$object = new AweBooking_Post_WP_Object( $this->got );
+		$object = new AweBooking_Post_Model( $this->got );
 
 		$this->assertEquals($object['title'], 'Game of Thrones');
 		$this->assertEquals($object->title, 'Game of Thrones');
@@ -48,7 +48,7 @@ class WP_Object_Test extends WP_UnitTestCase {
 	}
 
 	public function testMapping() {
-		$a = new AweBooking_Post_WP_Object( $this->got );
+		$a = new AweBooking_Post_Model( $this->got );
 
 		$this->assertArrayHasKey('release', $a->get_mapping());
 		$this->assertArrayHasKey('episodes', $a->get_mapping());
@@ -66,14 +66,14 @@ class WP_Object_Test extends WP_UnitTestCase {
 	}
 
 	public function testCastsAttr() {
-		$object = new AweBooking_Post_WP_Object( $this->got );
+		$object = new AweBooking_Post_Model( $this->got );
 
 		$this->assertSame($object['episodes'], 7);
 		$this->assertSame($object->episodes, 7);
 	}
 
 	public function testGetChanges() {
-		$object = new AweBooking_Post_WP_Object( $this->got );
+		$object = new AweBooking_Post_Model( $this->got );
 
 		$object['title'] = 'Changed';
 		$object['description'] = 'Desc has been changed';
@@ -117,7 +117,7 @@ class WP_Object_Test extends WP_UnitTestCase {
 	}
 
 	public function testInsert() {
-		$a = new AweBooking_Post_WP_Object;
+		$a = new AweBooking_Post_Model;
 		$a['title'] = 'HAHA';
 		$a['description'] = 'HEHE';
 		$a->save();
@@ -133,7 +133,7 @@ class WP_Object_Test extends WP_UnitTestCase {
 			'post_excerpt' => 'Season 7',
 		]);
 
-		$a = new AweBooking_Post_WP_Object( $id );
+		$a = new AweBooking_Post_Model( $id );
 		$a['description'] = 'Season7';
 		$a->save();
 
@@ -144,7 +144,7 @@ class WP_Object_Test extends WP_UnitTestCase {
 
 	public function testSoftDelete() {
 		$post_id = $this->factory->post->create();
-		$object = new AweBooking_Post_WP_Object( $post_id );
+		$object = new AweBooking_Post_Model( $post_id );
 
 		$this->assertTrue($object->delete()); // Soft delete.
 		$this->assertEquals('trash', get_post_status($post_id));
@@ -154,7 +154,7 @@ class WP_Object_Test extends WP_UnitTestCase {
 
 	public function testForceDelete() {
 		$post_id = $this->factory->post->create();
-		$object = new AweBooking_Post_WP_Object( $post_id );
+		$object = new AweBooking_Post_Model( $post_id );
 
 		$this->assertTrue($object->delete( true ));
 		$this->assertNull(get_post($post_id));
@@ -163,12 +163,12 @@ class WP_Object_Test extends WP_UnitTestCase {
 	}
 
 	public function testFailedDelete() {
-		$object = new AweBooking_Post_WP_Object(0);
+		$object = new AweBooking_Post_Model(0);
 		$this->assertNull($object->delete());
 	}
 
 	public function testMixed() {
-		$a = new AweBooking_Post_WP_Object;
+		$a = new AweBooking_Post_Model;
 		$a->fill([
 			'title'        => 'Game of Thrones',
 			'description'  => 'Season 7',
@@ -190,7 +190,7 @@ class WP_Object_Test extends WP_UnitTestCase {
 	}
 
 	public function testSaveEmptyMeta() {
-		$object = new AweBooking_Post_WP_Object;
+		$object = new AweBooking_Post_Model;
 		$object['title'] = '1';
 		$object['episodes'] = null;
 		$object['release'] = '';
@@ -202,7 +202,7 @@ class WP_Object_Test extends WP_UnitTestCase {
 	}
 }
 
-class AweBooking_Post_WP_Object extends WP_Object {
+class AweBooking_Post_Model extends Model {
 	protected $attributes = [
 		'title' => '',
 		'description' => '',

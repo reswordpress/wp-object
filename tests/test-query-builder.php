@@ -1,6 +1,6 @@
 <?php
 
-use Awethemes\WP_Object\Query\Builder;
+use Awethemes\WP_Object\Builder;
 use Awethemes\WP_Object\Query\Post_Query;
 
 class Query_Builder_Test extends WP_UnitTestCase {

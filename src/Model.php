@@ -1,10 +1,9 @@
 <?php
 namespace Awethemes\WP_Object;
 
-use Awethemes\WP_Object\Query\Builder;
-
 abstract class Model implements \ArrayAccess, \JsonSerializable {
-	use Traits\Has_Attributes;
+	use Concerns\Has_Attributes,
+		Concerns\Has_Events;
 
 	/**
 	 * Name of object type.
@@ -14,72 +13,104 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	protected $object_type;
 
 	/**
-	 * ID for this object.
+	 * The table associated with the model.
 	 *
-	 * @var int
+	 * @var string
 	 */
-	protected $id;
+	protected $table;
 
 	/**
-	 * WP Object (WP_Post, WP_Term, etc...) instance.
+	 * The primary key for the model.
 	 *
-	 * @var mixed
+	 * @var string
 	 */
-	protected $instance;
+	protected $primary_key = 'ID';
 
 	/**
 	 * Indicates if the object exists.
 	 *
 	 * @var bool
 	 */
-	protected $exists = false;
+	public $exists = false;
 
 	/**
 	 * Indicates if the object was inserted during the current request lifecycle.
 	 *
 	 * @var bool
 	 */
-	protected $recently_created = false;
+	public $recently_created = false;
 
 	/**
-	 * WP Object constructor.
+	 * Constructor.
 	 *
-	 * @param mixed $object Object ID we'll working for.
+	 * @param array|mixed $attributes The model attributes.
 	 */
-	public function __construct( $object = 0 ) {
-		$this->id = Utils::parse_object_id( $object );
-
-		// Setup the wp core object instance.
-		if ( ! is_null( $this->id ) ) {
-			$this->setup_instance();
-			$this->exists = ! is_null( $this->instance );
-
-			// If object mark exists, setup the attributes.
-			if ( $this->exists() ) {
-				$this->setup();
-			}
-		}
-
+	public function __construct( $attributes = [] ) {
+		// TODO: Back compat constructor as int.
 		// Set original to attributes so we can track and reset attributes if needed.
 		$this->sync_original();
+
+		// Fill the attributes.
+		$this->fill( $attributes );
 	}
 
 	/**
-	 * Setup the object attributes.
+	 * Fill the object with an array of attributes.
 	 *
-	 * @return void
+	 * @param  array $attributes An array of attributes to fill.
+	 * @return $this
 	 */
-	protected function setup() {}
+	public function fill( array $attributes ) {
+		foreach ( $attributes as $key => $value ) {
+			if ( ! array_key_exists( $key, $this->attributes ) ) {
+				continue;
+			}
+
+			$this->set_attribute( $key, $value );
+		}
+
+		return $this;
+	}
 
 	/**
-	 * Setup WP Core Object based on ID and object-type.
+	 * Create a new instance of the given model.
 	 *
-	 * @return void
+	 * @param  array|mixed $attributes
+	 * @param  bool        $exists
+	 *
+	 * @return static
 	 */
-	abstract protected function setup_instance();
+	public function new_instance( $attributes = [], $exists = false ) {
+		// This method just provides a convenient way for us to generate fresh model
+		// instances of this current model. It is particularly useful during the
+		// hydration of new objects via the query builder instances.
+		$model = new static( $attributes );
+
+		$model->exists = $exists;
+
+		return $model;
+	}
 
 	/**
-	 * Update the object.
+	 * Create a new model instance that is existing.
+	 *
+	 * @param  array       $attributes
+	 * @param  string|null $connection
+	 *
+	 * @return static
+	 */
+	public function new_from_builder( $attributes = [], $connection = null ) {
+		$model = $this->new_instance( [], true );
+
+		$model->setRawAttributes( (array) $attributes, true );
+
+		$model->trigger( 'retrieved', false );
+
+		return $model;
+	}
+
+	/**
+	 * Update the model in the database.
 	 *
 	 * @param  array $attributes The attributes to update.
 	 * @return bool
@@ -93,192 +124,168 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * Save the object to the database.
+	 * Save the model to the database.
 	 *
 	 * @return bool
 	 */
 	public function save() {
-		/**
-		 * Fires saving action.
-		 *
-		 * @param static $wp_object Current object instance.
-		 */
-		do_action( $this->prefix( 'saving' ), $this );
-
-		if ( $this->recently_created ) {
-			$this->recently_created = false;
+		// If the "saving" event returns false we'll bail out of the save and return
+		// false, indicating that the save failed. This provides a chance for any
+		// listeners to cancel save operations if validations fail or whatever.
+		if ( false === $this->trigger( 'saving' ) ) {
+			return false;
 		}
 
-		// Allow sub-class overwrite before_save method, here we can
-		// validate the attribute data before save or doing something else.
-		$this->before_save();
-
-		// If the object already exists we can update changes.
-		// Otherwise, we'll just insert them.
+		// If the model already exists in the database we can just update our record
+		// that is already in this database using the current IDs in this "where"
+		// clause to only update this model. Otherwise, we'll just insert them.
 		if ( $this->exists() ) {
-			$saved = $this->is_dirty() ? $this->update_object() : true;
+			$saved = $this->is_dirty() ? $this->perform_update() : true;
 		} else {
-			$saved = $this->insert_object();
+			$saved = $this->perform_insert();
 		}
 
 		if ( $saved ) {
 			$this->finish_save();
-
-			/**
-			 * Fires saved action.
-			 *
-			 * @param static $wp_object Current object instance.
-			 */
-			do_action( $this->prefix( 'saved' ), $this );
-
-			$this->sync_original();
 		}
 
 		return $saved;
 	}
 
 	/**
-	 * Do something before doing save.
-	 *
-	 * @return void
-	 */
-	protected function before_save() {}
-
-	/**
-	 * Do something when finish save.
+	 * Perform any actions that are necessary after the model is saved.
 	 *
 	 * @return void
 	 */
 	protected function finish_save() {
-		$this->clean_cache();
+		$this->trigger( 'saved' );
 
-		/*$this->perform_update_metadata(
-			$this->recently_created ? $this->get_dirty() : $this->get_changes()
-		);*/
+		$this->flush_cache();
 
-		$this->resetup();
+		$this->sync_original();
 	}
 
 	/**
-	 * Clean object cache after saved.
+	 * Flush the cache or whatever if necessary.
 	 *
 	 * @return void
 	 */
-	protected function clean_cache() {}
+	protected function flush_cache() {}
 
 	/**
-	 * Resetup the object.
-	 *
-	 * @return void
-	 */
-	protected function resetup() {
-		$this->setup_instance();
-
-		$this->metadata = $this->fetch_metadata();
-		$this->setup_metadata();
-
-		$this->setup();
-	}
-
-	/**
-	 * Run update object.
+	 * Perform a model update operation.
 	 *
 	 * @return bool
 	 */
-	protected function update_object() {
-		// If the "prev_create" filter returns false we'll bail out of the update and return
-		// false, indicating that the save failed. This provides a chance for any
-		// hooks to cancel update operations if validations fail or whatever.
-		if ( false === apply_filters( $this->prefix( 'prev_create' ), true ) ) {
+	protected function perform_update() {
+		// If the updating event returns false, we will cancel the update operation so
+		// developers can hook Validation systems into their models and cancel this
+		// operation if the model does not pass validation. Otherwise, we update.
+		if ( false === $this->trigger( 'updating', true ) ) {
 			return false;
 		}
-
-		/**
-		 * Fires updating action.
-		 *
-		 * @param static $wp_object Current object instance.
-		 */
-		do_action( $this->prefix( 'updating' ), $this );
 
 		$dirty = $this->get_dirty();
 
 		if ( count( $dirty ) > 0 ) {
-			$updated = $this->perform_update( $dirty );
-
-			if ( false === $updated ) {
+			// Pass the update action into subclass to process.
+			if ( false === $this->doing_update( $dirty ) ) {
 				return false;
 			}
 
-			/**
-			 * Fires updated action.
-			 *
-			 * @param static $wp_object Current object instance.
-			 */
-			do_action( $this->prefix( 'updated' ), $this );
-
 			$this->sync_changes();
+
+			$this->trigger( 'updating' );
 		}
 
 		return true;
 	}
 
 	/**
-	 * Run perform update object.
+	 * Perform the update the model into the database.
 	 *
-	 * @param  array $dirty The attributes has been modified.
+	 * @param  array $dirty The attributes to update.
+	 *
 	 * @return bool|void
 	 */
-	protected function perform_update( array $dirty ) {}
+	protected function doing_update( $dirty ) {
+		throw new \RuntimeException( 'The update action is not supported in the [' . get_class( $this ) . ']' );
+	}
 
 	/**
-	 * Run insert object into database.
+	 * Perform a model insert operation.
 	 *
 	 * @return bool
 	 */
-	protected function insert_object() {
-		// If the "prev_create" filter returns false we'll bail out of the create and return
-		// false, indicating that the save failed. This provides a chance for any
-		// hooks to cancel create operations if validations fail or whatever.
-		if ( false === apply_filters( $this->prefix( 'prev_create' ), true ) ) {
+	protected function perform_insert() {
+		if ( false === $this->trigger( 'creating', true ) ) {
 			return false;
 		}
 
-		/**
-		 * Fires creating action.
-		 *
-		 * @param static $wp_object Current object instance.
-		 */
-		do_action( $this->prefix( 'creating' ), $this );
+		// Pass the action to subclass to process.
+		$insert_id = $this->doing_insert(
+			$this->get_attributes()
+		);
 
-		$insert_id = $this->perform_insert();
-
-		if ( is_int( $insert_id ) && $insert_id > 0 ) {
-			// Set new ID after insert success.
-			$this->id = $insert_id;
-
-			$this->exists = true;
-
-			$this->recently_created = true;
-
-			/**
-			 * Fires after wp-object is created.
-			 *
-			 * @param static $wp_object Current object instance.
-			 */
-			do_action( $this->prefix( 'created' ), $this );
-
-			return true;
+		if ( ! is_int( $insert_id ) || 0 === $insert_id ) {
+			return false;
 		}
 
-		return false;
+		// We will go ahead and set the exists property to true, so that it is set when
+		// the created event is fired, just in case the developer tries to update it
+		// during the event. This will allow them to do so and run an update here.
+		$this->exists = true;
+
+		$this->recently_created = true;
+
+		// Set the ID on the model.
+		$this->set_attribute( $this->get_key_name(), $insert_id );
+
+		$this->trigger( 'created' );
+
+		return true;
 	}
 
 	/**
 	 * Run perform insert object into database.
 	 *
+	 * @param  array $attributes The attributes to insert.
 	 * @return int|void
 	 */
-	protected function perform_insert() {}
+	protected function doing_insert( $attributes ) {
+		throw new \RuntimeException( 'The insert action is not supported in the [' . get_class( $this ) . ']' );
+	}
+
+	/**
+	 * TODO: ...
+	 *
+	 * Destroy the models for the given IDs.
+	 *
+	 * @param  array|int $ids
+	 *
+	 * @return int
+	 */
+	public static function destroy( $ids ) {
+		// We'll initialize a count here so we will return the total number of deletes
+		// for the operation. The developers can then check this number as a boolean
+		// type value or get this total count of records deleted for logging, etc.
+		$count = 0;
+
+		$ids = is_array( $ids ) ? $ids : func_get_args();
+
+		// We will actually pull the models from the database table and call delete on
+		// each of them individually so that their events get fired properly with a
+		// correct set of attributes in case the developers wants to check these.
+		$key = ( $instance = new static )->get_key_name();
+
+		foreach ( $instance->whereIn( $key, $ids )->get() as $model ) {
+			if ( $model->delete() ) {
+				$count ++;
+			}
+		}
+
+		return $count;
+	}
 
 	/**
 	 * Trash or delete a wp-object.
@@ -287,54 +294,40 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 * @return bool|null
 	 */
 	public function delete( $force = false ) {
-		// If the object doesn't exist, there is nothing to delete
-		// so we'll just return immediately and not do anything else.
+		// If the model doesn't exist, there is nothing to delete so we'll just return
+		// immediately and not do anything else. Otherwise, we will continue with a
+		// deletion process on the model, firing the proper events, and so forth.
 		if ( ! $this->exists() ) {
 			return null;
 		}
 
-		// If the "prev_delete" filter returns false we'll bail out of the delete
-		// and just return. Indicating that the delete failed.
-		if ( false === apply_filters( $this->prefix( 'prev_delete' ), true ) ) {
-			return null;
+		if ( false === $this->trigger( 'deleting', true ) ) {
+			return false;
 		}
 
-		/**
-		 * Fires before a wp-object is deleted.
-		 *
-		 * @param static $wp_object Current object instance.
-		 */
-		do_action( $this->prefix( 'deleting' ), $this );
-
-		$deleted = $this->perform_delete( $force );
-
-		if ( $deleted ) {
-			$this->clean_cache();
-
-			// Now object will not exists.
-			$this->exists = false;
-
-			/**
-			 * Fires after a Model is deleted.
-			 *
-			 * @param int $object_id Object ID was deleted.
-			 */
-			do_action( $this->prefix( 'deleted' ), $this->get_id() );
+		// Pass the action to subclass to process.
+		if ( ! $this->perform_delete( $force ) ) {
+			return false;
 		}
 
-		return $deleted;
+		$this->exists = false;
+
+		$this->flush_cache();
+
+		$this->trigger( 'deleted' );
+
+		return true;
 	}
 
 	/**
 	 * Perform delete object.
 	 *
-	 * @see wp_delete_post()
-	 * @see wp_delete_term()
-	 *
-	 * @param  bool $force Force delete or not.
+	 * @param  bool $force Optional. Whether to bypass trash and force deletion.
 	 * @return bool
 	 */
-	abstract protected function perform_delete( $force );
+	protected function perform_delete( $force ) {
+		throw new \RuntimeException( 'The delete action is not supported in the [' . get_class( $this ) . ']' );
+	}
 
 	/**
 	 * Get all of the models.
@@ -350,7 +343,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 *
 	 * @param array $query The query.
 	 *
-	 * @return \Awethemes\WP_Object\Query\Builder
+	 * @return \Awethemes\WP_Object\Builder
 	 */
 	public static function query( $query = [] ) {
 		return ( new static )->new_builder( $query );
@@ -361,10 +354,10 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 *
 	 * @param array $query_vars The query.
 	 *
-	 * @return \Awethemes\WP_Object\Query\Builder
+	 * @return \Awethemes\WP_Object\Builder
 	 */
 	public function new_builder( $query_vars = [] ) {
-		return ( new Builder( $query_vars ) )->set_model( $this );
+		return ( new Builder( $this->new_query() ) )->set_model( $this );
 	}
 
 	/**
@@ -373,17 +366,30 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 * @return \Awethemes\WP_Object\Query\Query
 	 */
 	public function new_query() {
-		throw new \RuntimeException( 'The "' . get_class( $this ) . '" does not support query.' );
+		throw new \RuntimeException( 'Query is not supported in the [' . get_class( $this ) . ']' );
+	}
+
+	/**
+	 * Get a new database query builder.
+	 *
+	 * @return \Awethemes\WP_Object\Database\Builder
+	 */
+	public function new_db_query() {
+		return Database\Database::get_connection()->newQuery();
 	}
 
 	/**
 	 * Create a new Collection instance.
 	 *
-	 * @param  mixed $models An array of models.
+	 * @param mixed $models An array of models.
+	 * @param bool  $map    Should map this class into.
+	 *
 	 * @return \Awethemes\WP_Object\Collection
 	 */
-	public function new_collection( $models ) {
-		return ( new Collection( $models ) )->map_into( get_class( $this ) );
+	public function new_collection( $models, $map = false ) {
+		$collect = new Collection( $models );
+
+		return ! $map ? $collect : $collect->map_into( get_class( $this ) );
 	}
 
 	/**
@@ -391,7 +397,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 *
 	 * @return string
 	 */
-	public function get_wp_type() {
+	public function resolve_internal_type() {
 		return 'post';
 	}
 
@@ -401,16 +407,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 * @return int
 	 */
 	public function get_id() {
-		return (int) $this->id;
-	}
-
-	/**
-	 * Get the object instance,
-	 *
-	 * @return mixed
-	 */
-	public function get_instance() {
-		return $this->instance;
+		return (int) $this->get_attribute( $this->get_key_name() );
 	}
 
 	/**
@@ -423,105 +420,21 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * Set the object instance,
+	 * Get the table associated with the model.
 	 *
-	 * @param  mixed $instance The object instance.
-	 * @return mixed
-	 */
-	protected function set_instance( $instance ) {
-		$this->instance = $instance;
-
-		return $this;
-	}
-
-	/**
-	 * Helper: Prefix for action and filter hooks for this object.
-	 *
-	 * @param  string $hook_name Hook name without prefix.
 	 * @return string
 	 */
-	protected function prefix( $hook_name ) {
-		return sprintf( 'wp_%s_%s', $this->object_type, $hook_name );
+	public function get_table() {
+		return $this->table ?: $this->object_type;
 	}
 
 	/**
-	 * Dynamically retrieve attributes on the object.
+	 * Get the primary key for the model.
 	 *
-	 * @param  string $key The attribute key name.
-	 * @return mixed
+	 * @return string
 	 */
-	public function __get( $key ) {
-		return $this->get_attribute( $key );
-	}
-
-	/**
-	 * Dynamically set attributes on the object.
-	 *
-	 * @param  string $key   The attribute key name.
-	 * @param  mixed  $value The attribute value.
-	 * @return void
-	 */
-	public function __set( $key, $value ) {
-		$this->set_attribute( $key, $value );
-	}
-
-	/**
-	 * Determine if an attribute exists on the object.
-	 *
-	 * @param  string $key The attribute key name.
-	 * @return bool
-	 */
-	public function __isset( $key ) {
-		return ! is_null( $this->get_attribute( $key ) );
-	}
-
-	/**
-	 * Unset an attribute on the object.
-	 *
-	 * @param  string $key The attribute key name to remove.
-	 * @return void
-	 */
-	public function __unset( $key ) {
-		unset( $this->attributes[ $key ] );
-	}
-
-	/**
-	 * Returns the value at specified offset.
-	 *
-	 * @param  string $offset The offset to retrieve.
-	 * @return mixed
-	 */
-	public function offsetGet( $offset ) {
-		return $this->$offset;
-	}
-
-	/**
-	 * Assigns a value to the specified offset.
-	 *
-	 * @param string $offset The offset to assign the value to.
-	 * @param mixed  $value  The value to set.
-	 */
-	public function offsetSet( $offset, $value ) {
-		$this->$offset = $value;
-	}
-
-	/**
-	 * Whether or not an offset exists.
-	 *
-	 * @param  string $offset An offset to check for.
-	 * @return bool
-	 */
-	public function offsetExists( $offset ) {
-		return isset( $this->$offset );
-	}
-
-	/**
-	 * Unsets an offset.
-	 *
-	 * @param string $offset The offset to unset.
-	 */
-	public function offsetUnset( $offset ) {
-		unset( $this->$offset );
+	public function get_key_name() {
+		return $this->primary_key ?: 'ID';
 	}
 
 	/**
@@ -550,6 +463,86 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 */
 	public function to_json( $options = 0 ) {
 		return json_encode( $this->jsonSerialize(), $options );
+	}
+
+	/**
+	 * Returns the value at specified offset.
+	 *
+	 * @param  string $offset The offset to retrieve.
+	 * @return mixed
+	 */
+	public function offsetGet( $offset ) {
+		return $this->get_attribute( $offset );
+	}
+
+	/**
+	 * Assigns a value to the specified offset.
+	 *
+	 * @param string $offset The offset to assign the value to.
+	 * @param mixed  $value  The value to set.
+	 */
+	public function offsetSet( $offset, $value ) {
+		$this->set_attribute( $offset, $value );
+	}
+
+	/**
+	 * Whether or not an offset exists.
+	 *
+	 * @param  string $offset The offset to check for.
+	 * @return bool
+	 */
+	public function offsetExists( $offset ) {
+		return ! is_null( $this->get_attribute( $offset ) );
+	}
+
+	/**
+	 * Unsets an offset.
+	 *
+	 * @param string $offset The offset to unset.
+	 */
+	public function offsetUnset( $offset ) {
+		unset( $this->attributes[ $offset ] );
+	}
+
+	/**
+	 * Dynamically retrieve attributes on the model.
+	 *
+	 * @param  string $key The attribute key name.
+	 * @return mixed
+	 */
+	public function __get( $key ) {
+		return $this->get_attribute( $key );
+	}
+
+	/**
+	 * Dynamically set attributes on the model.
+	 *
+	 * @param  string $key   The attribute key name.
+	 * @param  mixed  $value The attribute value.
+	 * @return void
+	 */
+	public function __set( $key, $value ) {
+		$this->set_attribute( $key, $value );
+	}
+
+	/**
+	 * Determine if an attribute exists on the model.
+	 *
+	 * @param  string $key The attribute key name.
+	 * @return bool
+	 */
+	public function __isset( $key ) {
+		return $this->offsetExists( $key );
+	}
+
+	/**
+	 * Unset an attribute on the model.
+	 *
+	 * @param  string $key The attribute key name to remove.
+	 * @return void
+	 */
+	public function __unset( $key ) {
+		$this->offsetUnset( $key );
 	}
 
 	/**

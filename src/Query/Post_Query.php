@@ -1,7 +1,7 @@
 <?php
 namespace Awethemes\WP_Object\Query;
 
-class Post_Query extends Abstract_Query {
+class Post_Query implements Query {
 	/**
 	 * {@inheritdoc}
 	 */

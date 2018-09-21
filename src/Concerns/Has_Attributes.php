@@ -1,5 +1,5 @@
 <?php
-namespace Awethemes\WP_Object\Traits;
+namespace Awethemes\WP_Object\Concerns;
 
 trait Has_Attributes {
 	/**
@@ -95,24 +95,6 @@ trait Has_Attributes {
 		}
 
 		return $results;
-	}
-
-	/**
-	 * Fill the object with an array of attributes.
-	 *
-	 * @param  array $attributes An array of attributes to fill.
-	 * @return $this
-	 */
-	public function fill( array $attributes ) {
-		foreach ( $attributes as $key => $value ) {
-			if ( ! array_key_exists( $key, $this->attributes ) ) {
-				continue;
-			}
-
-			$this->set_attribute( $key, $value );
-		}
-
-		return $this;
 	}
 
 	/**
