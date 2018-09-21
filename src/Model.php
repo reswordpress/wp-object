@@ -62,10 +62,6 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 */
 	public function fill( array $attributes ) {
 		foreach ( $attributes as $key => $value ) {
-			if ( ! array_key_exists( $key, $this->attributes ) ) {
-				continue;
-			}
-
 			$this->set_attribute( $key, $value );
 		}
 
@@ -288,7 +284,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * Trash or delete a wp-object.
+	 * Delete the model from the database.
 	 *
 	 * @param  bool $force Optional. Whether to bypass trash and force deletion.
 	 * @return bool|null
@@ -306,7 +302,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		}
 
 		// Pass the action to subclass to process.
-		if ( ! $this->perform_delete( $force ) ) {
+		if ( ! $this->doing_delete( $force ) ) {
 			return false;
 		}
 
@@ -320,12 +316,12 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * Perform delete object.
+	 * Perform delete the model from the database.
 	 *
 	 * @param  bool $force Optional. Whether to bypass trash and force deletion.
 	 * @return bool
 	 */
-	protected function perform_delete( $force ) {
+	protected function doing_delete( $force ) {
 		throw new \RuntimeException( 'The delete action is not supported in the [' . get_class( $this ) . ']' );
 	}
 

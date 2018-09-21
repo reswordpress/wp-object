@@ -1,6 +1,8 @@
 <?php
 namespace Awethemes\WP_Object\Concerns;
 
+use Illuminate\Support\Arr;
+
 trait Has_Attributes {
 	/**
 	 * The attributes for this object.
@@ -82,22 +84,6 @@ trait Has_Attributes {
 	}
 
 	/**
-	 * Get a subset of the object attributes.
-	 *
-	 * @param  array|mixed $attributes The attributes to get.
-	 * @return array
-	 */
-	public function only( $attributes ) {
-		$results = [];
-
-		foreach ( is_array( $attributes ) ? $attributes : func_get_args() as $attribute ) {
-			$results[ $attribute ] = $this->get_attribute( $attribute );
-		}
-
-		return $results;
-	}
-
-	/**
 	 * Set the array of object attributes.
 	 *
 	 * @param  array $attributes The object attributes.
@@ -123,6 +109,33 @@ trait Has_Attributes {
 		$this->original = $this->attributes;
 
 		return $this;
+	}
+
+	/**
+	 * Get the model's original attribute values.
+	 *
+	 * @param  string|null $key
+	 * @param  mixed       $default
+	 * @return mixed|array
+	 */
+	public function get_original( $key = null, $default = null ) {
+		return Arr::get( $this->original, $key, $default );
+	}
+
+	/**
+	 * Get a subset of the model's attributes.
+	 *
+	 * @param  array|mixed $attributes The only attributes.
+	 * @return array
+	 */
+	public function only( $attributes ) {
+		$results = [];
+
+		foreach ( is_array( $attributes ) ? $attributes : func_get_args() as $attribute ) {
+			$results[ $attribute ] = $this->get_attribute( $attribute );
+		}
+
+		return $results;
 	}
 
 	/**
@@ -165,7 +178,7 @@ trait Has_Attributes {
 	}
 
 	/**
-	 * Determine if the object or given attribute(s) have been modified.
+	 * Determine if the model or given attribute(s) have been modified.
 	 *
 	 * @param  array|string|null $attributes Optional, the attribute(s) for determine.
 	 * @return bool
@@ -177,19 +190,17 @@ trait Has_Attributes {
 	}
 
 	/**
-	 * Determine if the object or given attribute(s) have remained the same.
+	 * Determine if the model or given attribute(s) have remained the same.
 	 *
 	 * @param  array|string|null $attributes Optional, the attribute(s) for determine.
 	 * @return bool
 	 */
 	public function is_clean( $attributes = null ) {
-		return ! $this->is_dirty(
-			is_array( $attributes ) ? $attributes : func_get_args()
-		);
+		return ! $this->is_dirty( ...func_get_args() );
 	}
 
 	/**
-	 * Determine if the object or given attribute(s) have been changed.
+	 * Determine if the model or given attribute(s) have been modified.
 	 *
 	 * @param  array|string|null $attributes Optional, the attribute(s) for determine.
 	 * @return bool
@@ -208,10 +219,16 @@ trait Has_Attributes {
 	 * @return bool
 	 */
 	protected function has_changes( array $changes, $attributes = null ) {
+		// If no specific attributes were provided, we will just see if the dirty array
+		// already contains any attributes. If it does we will just return that this
+		// count is greater than zero. Else, we need to check specific attributes.
 		if ( empty( $attributes ) ) {
 			return count( $changes ) > 0;
 		}
 
+		// Here we will spin through every attribute and see if this is in the array of
+		// dirty attributes. If it is, we will return true and if we make it through
+		// all of the attributes for the entire array we will return false at end.
 		foreach ( (array) $attributes as $attribute ) {
 			if ( array_key_exists( $attribute, $changes ) ) {
 				return true;
@@ -229,6 +246,7 @@ trait Has_Attributes {
 	 * @return array
 	 */
 	protected function get_changes_only( array $changes, $attributes ) {
+		_deprecated_function( __FUNCTION__, '2.0' );
 		return array_intersect( (array) $attributes, array_keys( $changes ) );
 	}
 
@@ -270,7 +288,7 @@ trait Has_Attributes {
 			return false;
 		}
 
-		$original = $this->original[ $key ];
+		$original = $this->get_original( $key );
 
 		if ( $current === $original ) {
 			return true;
