@@ -1,62 +1,85 @@
 <?php
 namespace Awethemes\WP_Object\Query;
 
-interface Query {
+abstract class Query {
 	/**
-	 * Perform the query.
+	 * The table name.
 	 *
-	 * @param array $query_vars The query vars.
-	 *
-	 * @return mixed Can be WP_Query|WP_Term_Query|WP_User_Query
+	 * @var string
 	 */
-	public function do_query( $query_vars );
+	protected $table;
+
+	/**
+	 * The primary key name.
+	 *
+	 * @var string
+	 */
+	protected $primary_key;
+
+	/**
+	 * Find a model by its primary key.
+	 *
+	 * @param  int|mixed $id
+	 * @return mixed
+	 */
+	abstract public function get_by_id( $id );
+
+	/**
+	 * Get the query vars.
+	 *
+	 * @return mixed
+	 */
+	abstract public function get_query_vars();
+
+	/**
+	 * Execute the query to retrieves items.
+	 *
+	 * @param  mixed $query_vars The query vars.
+	 * @return mixed
+	 */
+	abstract public function do_query( $query_vars );
 
 	/**
 	 * Extract items from the query.
 	 *
-	 * @param  mixed $the_query The query instance.
+	 * @param  mixed $items The raw items.
 	 * @return array
 	 */
-	public function extract_items( $the_query );
+	public function extract_items( $items ) {
+		return $items;
+	}
 
 	/**
-	 * Returns the main query vars.
+	 * //
 	 *
-	 * @return array
+	 * @param string $name
+	 * @param mixed  ...$vars
 	 */
-	// public function get_main_query();
+	public function apply_query( $name, ...$vars ) {
+		throw new \InvalidArgumentException( 'Unsupported query [' . $name . ']' );
+	}
 
 	/**
-	 * Sets the main query vars.
+	 * Set the table name.
 	 *
-	 * @param  array $main_query The main query vars.
-	 *
+	 * @param  string $table The table name.
 	 * @return $this
 	 */
-	// public function set_main_query( array $main_query );
+	public function set_table( $table ) {
+		$this->table = $table;
+
+		return $this;
+	}
 
 	/**
-	 * Alter the "limit" query.
+	 * Set the primary key name.
 	 *
-	 * @param array $query_vars The query vars.
-	 * @param int   $value      The "limit" value.
+	 * @param  string $primary_key The primary key name.
+	 * @return $this
 	 */
-	// public function apply_limit_query( array &$query_vars, $value );
+	public function set_primary_key( $primary_key ) {
+		$this->primary_key = $primary_key;
 
-	/**
-	 * Alter the "offset" query.
-	 *
-	 * @param array $query_vars The query vars.
-	 * @param int   $offset     The offset value.
-	 */
-	// public function apply_offset_query( &$query_vars, $offset );
-
-	/**
-	 * Alter the "orderby" query.
-	 *
-	 * @param array  $query_vars The query vars.
-	 * @param string $orderby    The column to order by.
-	 * @param string $order      Order by DESC or ASC.
-	 */
-	// public function apply_orderby_query( &$query_vars, $orderby, $order );
+		return $this;
+	}
 }

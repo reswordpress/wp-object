@@ -1,5 +1,7 @@
 <?php
-namespace Awethemes\WP_Object;
+namespace Awethemes\WP_Object\Utils;
+
+use Awethemes\WP_Object\Model;
 
 class Utils {
 	/**

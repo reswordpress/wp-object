@@ -1,7 +1,6 @@
 <?php
 namespace Awethemes\WP_Object\Database;
 
-use Awethemes\WP_Object\Collection;
 use Database\Query\Builder as QueryBuilder;
 
 class Builder extends QueryBuilder {
@@ -9,26 +8,12 @@ class Builder extends QueryBuilder {
 	 * Execute the query as a "select" statement.
 	 *
 	 * @param  array $columns
-	 *
-	 * @return \Awethemes\WP_Object\Collection
+	 * @return array
 	 */
 	public function get( $columns = [ '*' ] ) {
-		$results = $this->onceWithColumns( $columns, function () {
+		return $this->onceWithColumns( $columns, function () {
 			return $this->connection->fetchAll( $this->toSql(), $this->getBindings() );
 		} );
-
-		return $this->newCollection( $results );
-	}
-
-	/**
-	 * Create new collection.
-	 *
-	 * @param mixed $items
-	 *
-	 * @return \Awethemes\WP_Object\Collection
-	 */
-	protected function newCollection( $items ) {
-		return new Collection( $items );
 	}
 
 	/**

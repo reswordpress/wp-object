@@ -1,12 +1,34 @@
 <?php
 namespace Awethemes\WP_Object\Query;
 
-class Term_Query implements Query {
+class Term_Query extends Query {
 	/**
-	 * {@inheritdoc}
+	 * Find a model by its primary key.
+	 *
+	 * @param  int|mixed $id
+	 * @return mixed
+	 */
+	public function find( $id ) {
+		// TODO: Implement find() method.
+	}
+
+	/**
+	 * Get the query vars.
+	 *
+	 * @return mixed
+	 */
+	public function get_query_vars() {
+		// TODO: Implement get_query_vars() method.
+	}
+
+	/**
+	 * Execute the query to retrieves items.
+	 *
+	 * @param  array $query_vars The query vars.
+	 * @return \WP_Term_Query
 	 */
 	public function do_query( $query_vars ) {
-		return new \WP_Term_Query( $query_vars );
+		return new \WP_Term_Query( $this->query_vars );
 	}
 
 	/**
@@ -14,27 +36,5 @@ class Term_Query implements Query {
 	 */
 	public function extract_items( $term_query ) {
 		return $term_query->terms;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function apply_limit_query( array &$query_vars, $limit ) {
-		$query_vars['number'] = (int) $limit;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function apply_offset_query( &$query_vars, $offset ) {
-		$query_vars['offset'] = $offset;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function apply_orderby_query( &$query_vars, $orderby, $order ) {
-		$query_vars['order']   = $order;
-		$query_vars['orderby'] = $orderby;
 	}
 }

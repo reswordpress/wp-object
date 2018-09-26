@@ -7,7 +7,7 @@ class Query_Vars implements \ArrayAccess {
 	 *
 	 * @var array
 	 */
-	protected $query_vars = [];
+	public $query_vars = [];
 
 	/**
 	 * Constructor.
@@ -31,11 +31,11 @@ class Query_Vars implements \ArrayAccess {
 	}
 
 	/**
-	 * Returns the query vars.
+	 * Returns all query vars.
 	 *
 	 * @return array
 	 */
-	public function all() {
+	public function to_array() {
 		return $this->query_vars;
 	}
 

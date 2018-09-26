@@ -56,9 +56,7 @@ class Post extends Model {
 	 *
 	 * @return \Awethemes\WP_Object\Relations\Taxonomy
 	 */
-	public function taxonomy( $related, $taxomony ) {
-		$instance = new $related;
-	}
+	public function taxonomy( $related, $taxomony ) {}
 
 	/**
 	 * {@inheritdoc}
@@ -68,42 +66,7 @@ class Post extends Model {
 			'post_type'           => $this->get_post_type(),
 			'no_found_rows'       => true,
 			'ignore_sticky_posts' => true,
+			'posts_per_page'      => -1,
 		] );
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	protected function setup_instance() {
-		$wp_post = get_post( $this->get_id() );
-
-		if ( ! is_null( $wp_post ) && get_post_type( $wp_post->ID ) === $this->get_post_type() ) {
-			$this->set_instance( $wp_post );
-		}
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	protected function perform_delete( $force ) {
-		if ( ! $force && EMPTY_TRASH_DAYS && 'trash' !== get_post_status( $this->get_id() ) ) {
-			$delete = wp_trash_post( $this->get_id() );
-		} else {
-			$delete = wp_delete_post( $this->get_id(), true );
-		}
-
-		return ( ! is_null( $delete ) && ! is_wp_error( $delete ) && false !== $delete );
-	}
-
-	/**
-	 * Helper: Safely update a post.
-	 *
-	 * @see \Awethemes\WP_Object\Utils::update_the_post
-	 *
-	 * @param  array $post_data An array post data to update.
-	 * @return bool|null
-	 */
-	protected function update_the_post( array $post_data ) {
-		return Utils::update_the_post( $this->get_id(), $post_data );
 	}
 }

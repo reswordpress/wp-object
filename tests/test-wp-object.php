@@ -3,9 +3,6 @@
 use Awethemes\WP_Object\Model;
 
 class WP_Object_Test extends WP_UnitTestCase {
-	/**
-	 * Set up the test fixture.
-	 */
 	public function setUp() {
 		parent::setUp();
 
@@ -204,10 +201,10 @@ class WP_Object_Test extends WP_UnitTestCase {
 
 class AweBooking_Post_Model extends Model {
 	protected $attributes = [
-		'title' => '',
+		'title'       => '',
 		'description' => '',
-		'release' => '',
-		'episodes' => null,
+		'release'     => '',
+		'episodes'    => null,
 	];
 
 	protected $maps = [
@@ -220,26 +217,26 @@ class AweBooking_Post_Model extends Model {
 	];
 
 	protected function perform_insert() {
-		$post_id = wp_insert_post([
-			'post_title' => $this['title'],
+		$post_id = wp_insert_post( [
+			'post_title'   => $this['title'],
 			'post_excerpt' => $this['description'],
-		]);
+		] );
 
 		return $post_id;
 	}
 
 	protected function perform_update( array $changes ) {
-		wp_update_post([
-			'ID' => $this->get_id(),
-			'post_title' => $this['title'],
+		wp_update_post( [
+			'ID'           => $this->get_id(),
+			'post_title'   => $this['title'],
 			'post_excerpt' => $this['description'],
-		]);
+		] );
 
 		return true;
 	}
 
 	protected function setup() {
-		$this['title'] = $this->instance->post_title;
+		$this['title']       = $this->instance->post_title;
 		$this['description'] = $this->instance->post_excerpt;
 	}
 

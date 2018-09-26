@@ -1,7 +1,7 @@
 <?php
-namespace Awethemes\WP_Object;
+namespace Awethemes\WP_Object\Query;
 
-use Awethemes\WP_Object\Query\Query;
+use Awethemes\WP_Object\Model;
 
 class Builder {
 	/**
@@ -28,20 +28,36 @@ class Builder {
 	}
 
 	/**
+	 * Find a model by its primary key.
+	 *
+	 * @param  int|mixed $id
+	 * @return mixed
+	 */
+	public function find( $id ) {
+		$result = $this->query->get_by_id( $id );
+
+		if ( ! $result ) {
+			return null;
+		}
+
+		return $this->model->new_from_builder( $result );
+	}
+
+	/**
 	 * Execute the query.
 	 *
 	 * @return \Awethemes\WP_Object\Collection
 	 */
 	public function get() {
-		$query_vars = array_merge(
-			$this->query->get_main_query(), $this->get_query_vars()
-		);
+		$query_vars = $this->query->get_query_vars();
 
 		$models = $this->query->extract_items(
 			$this->query->do_query( $query_vars )
 		);
 
-		return $this->get_model()->new_collection( $models );
+		return $this->get_model()->new_collection(
+			$this->hydrate( $models )
+		);
 	}
 
 	/**
@@ -51,6 +67,18 @@ class Builder {
 	 */
 	public function first() {
 		return $this->limit( 1 )->get()->first();
+	}
+
+	/**
+	 * Build the "select" query.
+	 *
+	 * @param  string $column The column name.
+	 * @return $this
+	 */
+	public function select( $column = '*' ) {
+		$this->query->apply_query( 'select', $column );
+
+		return $this;
 	}
 
 	/**
@@ -70,7 +98,7 @@ class Builder {
 	 * @return $this
 	 */
 	public function limit( $limit ) {
-		$this->query->apply_limit_query( $this->query_vars, (int) $limit );
+		$this->query->apply_query( 'limit', (int) $limit );
 
 		return $this;
 	}
@@ -92,7 +120,7 @@ class Builder {
 	 * @return $this
 	 */
 	public function offset( $offset ) {
-		$this->query->apply_offset_query( $this->query_vars, max( 0, $offset ) );
+		$this->query->apply_query( 'offset', max( 0, $offset ) );
 
 		return $this;
 	}
@@ -106,7 +134,7 @@ class Builder {
 	 * @return $this
 	 */
 	public function orderby( $orderby, $order = 'DESC' ) {
-		$this->query->apply_orderby_query( $this->query_vars, $orderby, $order );
+		$this->query->apply_query( 'orderby', $orderby, $order );
 
 		return $this;
 	}
@@ -121,6 +149,28 @@ class Builder {
 	 */
 	public function for_page( $page, $per_page = 15 ) {
 		return $this->skip( ( $page - 1 ) * $per_page )->take( $per_page );
+	}
+
+	/**
+	 * Create and return an un-saved model instance.
+	 *
+	 * @param  array $attributes
+	 * @return \Awethemes\WP_Object\Model
+	 */
+	public function make( array $attributes = [] ) {
+		return $this->model->new_instance( $attributes );
+	}
+
+	/**
+	 * Create a collection of models from plain arrays.
+	 *
+	 * @param  array $items
+	 * @return array
+	 */
+	public function hydrate( array $items ) {
+		return array_map( function ( $item ) {
+			return $this->model->new_from_builder( $item );
+		}, $items );
 	}
 
 	/**
@@ -146,8 +196,32 @@ class Builder {
 	public function set_model( Model $model ) {
 		$this->model = $model;
 
-		$this->query = $model->new_query();
+		$this->query->set_table( $model->get_table() );
+		$this->query->set_primary_key( $model->get_key_name() );
 
 		return $this;
+	}
+
+	/**
+	 * Dynamically handle calls into the query instance.
+	 *
+	 * @param  string $name      The method name.
+	 * @param  array  $arguments The arguments.
+	 * @return mixed
+	 */
+	public function __call( $name, $arguments ) {
+		// Forward call to the query builder.
+		$this->query->apply_query( $name, ...$arguments );
+
+		return $this;
+	}
+
+	/**
+	 * Force a clone of the underlying query builder when cloning.
+	 *
+	 * @return void
+	 */
+	public function __clone() {
+		$this->query = clone $this->query;
 	}
 }

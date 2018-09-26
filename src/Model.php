@@ -90,15 +90,13 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	/**
 	 * Create a new model instance that is existing.
 	 *
-	 * @param  array       $attributes
-	 * @param  string|null $connection
-	 *
+	 * @param  array $attributes
 	 * @return static
 	 */
-	public function new_from_builder( $attributes = [], $connection = null ) {
+	public function new_from_builder( $attributes = [] ) {
 		$model = $this->new_instance( [], true );
 
-		$model->setRawAttributes( (array) $attributes, true );
+		$model->set_raw_attributes( (array) $attributes, true );
 
 		$model->trigger( 'retrieved', false );
 
@@ -185,7 +183,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 
 		if ( count( $dirty ) > 0 ) {
 			// Pass the update action into subclass to process.
-			if ( false === $this->doing_update( $dirty ) ) {
+			if ( false === $this->call_doing( 'update', $dirty ) ) {
 				return false;
 			}
 
@@ -195,17 +193,6 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		}
 
 		return true;
-	}
-
-	/**
-	 * Perform the update the model into the database.
-	 *
-	 * @param  array $dirty The attributes to update.
-	 *
-	 * @return bool|void
-	 */
-	protected function doing_update( $dirty ) {
-		throw new \RuntimeException( 'The update action is not supported in the [' . get_class( $this ) . ']' );
 	}
 
 	/**
@@ -219,11 +206,9 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		}
 
 		// Pass the action to subclass to process.
-		$insert_id = $this->doing_insert(
-			$this->get_attributes()
-		);
+		$insert_id = $this->call_doing( 'insert', $this->get_attributes() );
 
-		if ( ! is_int( $insert_id ) || 0 === $insert_id ) {
+		if ( ! is_int( $insert_id ) || $insert_id <= 0 ) {
 			return false;
 		}
 
@@ -243,13 +228,30 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * Run perform insert object into database.
+	 * Call the doing a action.
 	 *
-	 * @param  array $attributes The attributes to insert.
-	 * @return int|void
+	 * @param  string $action The action name.
+	 * @param  array  $vars   The action parameters.
+	 * @return mixed
 	 */
-	protected function doing_insert( $attributes ) {
-		throw new \RuntimeException( 'The insert action is not supported in the [' . get_class( $this ) . ']' );
+	protected function call_doing( $action, $vars = [] ) {
+		$vars = is_array( $vars ) ? $vars : array_slice( func_get_args(), 1 );
+
+		$method = $method = "doing_{$action}";
+
+		// First, we will looking up for the action in current model.
+		if ( method_exists( $this, $method ) ) {
+			return $this->{$method}( ...$vars );
+		}
+
+		// The looking up in the query.
+		$query = $this->new_query();
+
+		if ( method_exists( $query, $method ) ) {
+			return $query->{$method}( ...$vars );
+		}
+
+		throw new \RuntimeException( 'The "' . $action . '" action is not supported in the [' . get_class( $this ) . ']' );
 	}
 
 	/**
@@ -274,7 +276,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		// correct set of attributes in case the developers wants to check these.
 		$key = ( $instance = new static )->get_key_name();
 
-		foreach ( $instance->whereIn( $key, $ids )->get() as $model ) {
+		foreach ( $instance->in( $key, $ids )->get() as $model ) {
 			if ( $model->delete() ) {
 				$count ++;
 			}
@@ -302,7 +304,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		}
 
 		// Pass the action to subclass to process.
-		if ( ! $this->doing_delete( $force ) ) {
+		if ( ! $this->call_doing( 'delete', $force ) ) {
 			return false;
 		}
 
@@ -316,44 +318,22 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * Perform delete the model from the database.
-	 *
-	 * @param  bool $force Optional. Whether to bypass trash and force deletion.
-	 * @return bool
-	 */
-	protected function doing_delete( $force ) {
-		throw new \RuntimeException( 'The delete action is not supported in the [' . get_class( $this ) . ']' );
-	}
-
-	/**
 	 * Get all of the models.
 	 *
 	 * @return \Awethemes\WP_Object\Collection static[]
 	 */
 	public static function all() {
-		return ( new static )->new_builder()->limit( -1 )->get();
+		return ( new static )->new_query_builder()->get();
 	}
 
 	/**
 	 * Begin querying the model.
 	 *
 	 * @param array $query The query.
-	 *
-	 * @return \Awethemes\WP_Object\Builder
+	 * @return \Awethemes\WP_Object\Query\Builder
 	 */
 	public static function query( $query = [] ) {
-		return ( new static )->new_builder( $query );
-	}
-
-	/**
-	 * Get a new query builder for the model's.
-	 *
-	 * @param array $query_vars The query.
-	 *
-	 * @return \Awethemes\WP_Object\Builder
-	 */
-	public function new_builder( $query_vars = [] ) {
-		return ( new Builder( $this->new_query() ) )->set_model( $this );
+		return ( new static )->new_query_builder( $query );
 	}
 
 	/**
@@ -362,7 +342,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 * @return \Awethemes\WP_Object\Query\Query
 	 */
 	public function new_query() {
-		throw new \RuntimeException( 'Query is not supported in the [' . get_class( $this ) . ']' );
+		return new Query\DB_Query( $this->new_db_query() );
 	}
 
 	/**
@@ -371,7 +351,17 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 * @return \Awethemes\WP_Object\Database\Builder
 	 */
 	public function new_db_query() {
-		return Database\Database::get_connection()->newQuery();
+		return Database\Database::get_connection()->table( $this->get_table() );
+	}
+
+	/**
+	 * Get a new query builder for the model's.
+	 *
+	 * @param array $query_vars The query.
+	 * @return \Awethemes\WP_Object\Query\Builder
+	 */
+	public function new_query_builder( $query_vars = [] ) {
+		return ( new Query\Builder( $this->new_query() ) )->set_model( $this );
 	}
 
 	/**
@@ -548,5 +538,31 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 */
 	public function __toString() {
 		return $this->to_json();
+	}
+
+	/**
+	 * Handle dynamic method calls into the model.
+	 *
+	 * @param  string $method
+	 * @param  array  $parameters
+	 * @return mixed
+	 */
+	public function __call( $method, $parameters ) {
+		$builder = $this->new_query_builder();
+
+		return $builder->{$method}( ...$parameters );
+	}
+
+	/**
+	 * Handle dynamic static method calls into the method.
+	 *
+	 * @param  string $method
+	 * @param  array  $parameters
+	 * @return mixed
+	 */
+	public static function __callStatic( $method, $parameters ) {
+		$builder = ( new static )->new_query_builder();
+
+		return $builder->$method( ...$parameters );
 	}
 }

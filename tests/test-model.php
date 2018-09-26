@@ -82,6 +82,33 @@ class Test_Model extends WP_UnitTestCase {
 		$this->assertInstanceOf( ModelStub::class, $instance );
 		$this->assertEquals( 'van anh', $instance->name );
 	}
+
+	public function testModelUser() {
+		global $wpdb;
+
+		$this->factory->user->create_many( 4 );
+
+		$users = UserModelUser::limit( 2 )->get();
+
+		dump( $users );
+		dump( $wpdb->last_query );
+	}
+
+	/*public function testModelUser() {
+		$this->factory->post->create_many( 4 );
+
+		$posts = PostModelUser::query()
+		                      ->get();
+		dump( $posts );
+	}*/
 }
 
-class ModelStub extends \Awethemes\WP_Object\Model {}
+class ModelStub extends \Awethemes\WP_Object\Model {
+}
+
+class UserModelUser extends \Awethemes\WP_Object\Model {
+	protected $table = 'users';
+}
+
+class PostModelUser extends \Awethemes\WP_Object\Post {
+}

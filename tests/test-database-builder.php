@@ -30,7 +30,7 @@ class Database_Builder_Test extends WP_UnitTestCase {
 		$this->factory->post->create_many( 10 );
 		Database::enableQueryLog();
 
-		dump( Database::select( "SELECT * FROM TABLE {$wpdb->posts} LIMIT 10" ) );
-		dump( Database::get_connection()->getLogger());
+		/*dump( Database::select( "SELECT * FROM {$wpdb->posts} LIMIT 10" ) );
+		dump( Database::get_connection()->getLogger());*/
 	}
 }
