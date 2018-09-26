@@ -183,7 +183,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 
 		if ( count( $dirty ) > 0 ) {
 			// Pass the update action into subclass to process.
-			if ( false === $this->call_doing( 'update', $dirty ) ) {
+			if ( false === $this->doing( 'update', $dirty ) ) {
 				return false;
 			}
 
@@ -206,7 +206,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		}
 
 		// Pass the action to subclass to process.
-		$insert_id = $this->call_doing( 'insert', $this->get_attributes() );
+		$insert_id = $this->doing( 'insert', $this->get_attributes() );
 
 		if ( ! is_int( $insert_id ) || $insert_id <= 0 ) {
 			return false;
@@ -230,25 +230,21 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	/**
 	 * Call the doing a action.
 	 *
-	 * @param  string $action The action name.
-	 * @param  array  $vars   The action parameters.
+	 * @param  string $action  The action name.
+	 * @param  mixed  ...$vars The action parameters.
 	 * @return mixed
 	 */
-	protected function call_doing( $action, $vars = [] ) {
-		$vars = is_array( $vars ) ? $vars : array_slice( func_get_args(), 1 );
-
+	protected function doing( $action, ...$vars ) {
 		$method = $method = "doing_{$action}";
 
-		// First, we will looking up for the action in current model.
+		// First, we will looking up for the actions in current model.
 		if ( method_exists( $this, $method ) ) {
 			return $this->{$method}( ...$vars );
 		}
 
-		// The looking up in the query.
-		$query = $this->new_query();
-
-		if ( method_exists( $query, $method ) ) {
-			return $query->{$method}( ...$vars );
+		// Then, looking actions in the query.
+		if ( method_exists( $query = $this->new_query(), $method ) ) {
+			return $query->{$method}( $this, ...$vars );
 		}
 
 		throw new \RuntimeException( 'The "' . $action . '" action is not supported in the [' . get_class( $this ) . ']' );
@@ -304,7 +300,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		}
 
 		// Pass the action to subclass to process.
-		if ( ! $this->call_doing( 'delete', $force ) ) {
+		if ( ! $this->doing( 'delete', $force ) ) {
 			return false;
 		}
 
@@ -388,12 +384,30 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * Get the object ID.
+	 * Get the value of the model's primary key.
 	 *
 	 * @return int
 	 */
 	public function get_id() {
-		return (int) $this->get_attribute( $this->get_key_name() );
+		return (int) $this->get_key();
+	}
+
+	/**
+	 * Get the value of the model's primary key.
+	 *
+	 * @return int|null
+	 */
+	public function get_key() {
+		return $this->get_attribute( $this->get_key_name() );
+	}
+
+	/**
+	 * Get the primary key value for a save query.
+	 *
+	 * @return int|null
+	 */
+	public function get_key_for_save() {
+		return $this->get_original( $this->get_key_name(), $this->get_key() );
 	}
 
 	/**

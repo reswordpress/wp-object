@@ -88,9 +88,16 @@ class Test_Model extends WP_UnitTestCase {
 
 		$this->factory->user->create_many( 4 );
 
-		$users = UserModelUser::limit( 2 )->get();
+		$user = new TestModelUser([
+			'user_login' => 'aaa',
+			'user_pass'  => '112',
+		]);
 
-		dump( $users );
+		$user->save();
+		$user->delete();
+		$user->save();
+
+		dump( $user );
 		dump( $wpdb->last_query );
 	}
 
@@ -106,9 +113,9 @@ class Test_Model extends WP_UnitTestCase {
 class ModelStub extends \Awethemes\WP_Object\Model {
 }
 
-class UserModelUser extends \Awethemes\WP_Object\Model {
+class TestModelUser extends \Awethemes\WP_Object\Model {
 	protected $table = 'users';
 }
 
-class PostModelUser extends \Awethemes\WP_Object\Post {
+class TestModelPost extends \Awethemes\WP_Object\Post {
 }

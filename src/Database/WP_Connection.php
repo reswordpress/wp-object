@@ -143,15 +143,9 @@ class WP_Connection implements ConnectionInterface {
 				return [];
 			}
 
-			$results = $this->wpdb->{$method}(
+			return $this->wpdb->{$method}(
 				$this->prepareQuery( $query, $bindings ), $this->outputMode // @codingStandardsIgnoreLine
 			);
-
-			if ( $this->wpdb->last_error ) {
-				throw new \RuntimeException( $this->wpdb->last_error );
-			}
-
-			return $results;
 		} );
 	}
 
@@ -194,13 +188,7 @@ class WP_Connection implements ConnectionInterface {
 			}
 
 			// @codingStandardsIgnoreLine
-			$affected = $this->wpdb->query( $this->prepareQuery( $query, $bindings ) );
-
-			if ( $this->wpdb->last_error ) {
-				throw new \RuntimeException( $this->wpdb->last_error );
-			}
-
-			return $affected;
+			return $this->wpdb->query( $this->prepareQuery( $query, $bindings ) );
 		} );
 	}
 
@@ -245,6 +233,10 @@ class WP_Connection implements ConnectionInterface {
 	protected function run( $query, $bindings, Closure $callback ) {
 		$start = microtime( true );
 
+		// Prevent showing the errors.
+		$suppress_errors = $this->wpdb->suppress_errors;
+		$this->wpdb->suppress_errors( true );
+
 		// Here we will run this query. If an exception occurs we'll determine if it was
 		// caused by a connection that has been lost. If that is the cause, we'll try
 		// to re-establish connection and re-run the query with a fresh connection.
@@ -258,6 +250,8 @@ class WP_Connection implements ConnectionInterface {
 		// then log the query, bindings, and execution time so we will report them on
 		// the event that the developer needs them. We'll log time in milliseconds.
 		$this->logQuery( $query, $bindings, $this->getElapsedTime( $start ) );
+
+		$this->wpdb->suppress_errors( $suppress_errors );
 
 		return $result;
 	}
@@ -279,6 +273,11 @@ class WP_Connection implements ConnectionInterface {
 			// run the SQL against the connection. Then we can calculate the time it
 			// took to execute and log the query SQL, bindings and time in our memory.
 			$result = $callback( $query, $bindings );
+
+			// Throw the exception when get any error.
+			if ( $this->wpdb->last_error ) {
+				throw new \RuntimeException( $this->wpdb->last_error );
+			}
 		} catch ( Exception $e ) {
 			// If an exception occurs when attempting to run a query, we'll format the error
 			// message to include the bindings with SQL, which will make this exception a

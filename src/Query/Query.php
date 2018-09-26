@@ -1,6 +1,15 @@
 <?php
 namespace Awethemes\WP_Object\Query;
 
+/**
+ * Class Query
+ *
+ * @method int|null doing_insert( $model, $attributes )
+ * @method int|bool doing_update( $mode, $dirty )
+ * @method bool     doing_delete( $model, $force )
+ *
+ * @package Awethemes\WP_Object\Query
+ */
 abstract class Query {
 	/**
 	 * The table name.
