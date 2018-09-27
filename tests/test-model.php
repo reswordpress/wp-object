@@ -88,10 +88,10 @@ class Test_Model extends WP_UnitTestCase {
 
 		$this->factory->user->create_many( 4 );
 
-		$user = new TestModelUser([
+		$user = new TestModelUser( [
 			'user_login' => 'aaa',
 			'user_pass'  => '112',
-		]);
+		] );
 
 		$user->save();
 		$user->delete();

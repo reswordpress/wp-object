@@ -210,8 +210,11 @@ class Builder {
 	 * @return mixed
 	 */
 	public function __call( $name, $arguments ) {
-		// Forward call to the query builder.
-		$this->query->apply_query( $name, ...$arguments );
+		if ( method_exists( $this->query, $name ) ) {
+			return $this->query->{$name}( ...$arguments );
+		}
+
+		$this->query->get_query_vars()->{$name}( ...$arguments );
 
 		return $this;
 	}

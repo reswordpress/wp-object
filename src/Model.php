@@ -1,6 +1,8 @@
 <?php
 namespace Awethemes\WP_Object;
 
+use Awethemes\Database\Database;
+
 abstract class Model implements \ArrayAccess, \JsonSerializable {
 	use Concerns\Has_Attributes,
 		Concerns\Has_Events;
@@ -46,11 +48,8 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 * @param array|mixed $attributes The model attributes.
 	 */
 	public function __construct( $attributes = [] ) {
-		// TODO: Back compat constructor as int.
-		// Set original to attributes so we can track and reset attributes if needed.
 		$this->sync_original();
 
-		// Fill the attributes.
 		$this->fill( $attributes );
 	}
 
@@ -344,10 +343,10 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	/**
 	 * Get a new database query builder.
 	 *
-	 * @return \Awethemes\WP_Object\Database\Builder
+	 * @return \Awethemes\Database\Builder
 	 */
 	public function new_db_query() {
-		return Database\Database::get_connection()->table( $this->get_table() );
+		return Database::table( $this->get_table() );
 	}
 
 	/**

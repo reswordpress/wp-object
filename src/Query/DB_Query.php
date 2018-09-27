@@ -1,13 +1,13 @@
 <?php
 namespace Awethemes\WP_Object\Query;
 
-use Awethemes\WP_Object\Database\Builder as QueryBuilder;
+use Awethemes\Database\Builder as QueryBuilder;
 
 class DB_Query extends Query {
 	/**
 	 * The database query builder instance.
 	 *
-	 * @var \Awethemes\WP_Object\Database\Builder
+	 * @var \Awethemes\Database\Builder
 	 */
 	protected $query;
 
@@ -34,7 +34,7 @@ class DB_Query extends Query {
 	/**
 	 * Get the query vars.
 	 *
-	 * @return \Awethemes\WP_Object\Database\Builder
+	 * @return \Awethemes\Database\Builder
 	 */
 	public function get_query_vars() {
 		return $this->query;
@@ -43,7 +43,7 @@ class DB_Query extends Query {
 	/**
 	 * Execute the query to retrieves items.
 	 *
-	 * @param  \Awethemes\WP_Object\Database\Builder $query The query builder instance.
+	 * @param  \Awethemes\Database\Builder $query The query builder instance.
 	 * @return array
 	 */
 	public function do_query( $query ) {
