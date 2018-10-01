@@ -276,7 +276,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		foreach ( $ids as $id ) {
 			$model = static::find( $id );
 
-			if ( $model && $model->delete() ) {
+			if ( $model && $model->delete( true ) ) {
 				$count++;
 			}
 		}
