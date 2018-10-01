@@ -3,6 +3,13 @@ namespace Awethemes\WP_Object;
 
 use Awethemes\Database\Database;
 
+/**
+ * Class Model
+ *
+ * @method static static find( $id )
+ *
+ * @package Awethemes\WP_Object
+ */
 abstract class Model implements \ArrayAccess, \JsonSerializable {
 	use Concerns\Has_Attributes,
 		Concerns\Has_Events;
@@ -250,12 +257,9 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * TODO: ...
-	 *
 	 * Destroy the models for the given IDs.
 	 *
-	 * @param  array|int $ids
-	 *
+	 * @param  array|int $ids The IDs.
 	 * @return int
 	 */
 	public static function destroy( $ids ) {
@@ -269,11 +273,11 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		// We will actually pull the models from the database table and call delete on
 		// each of them individually so that their events get fired properly with a
 		// correct set of attributes in case the developers wants to check these.
-		$key = ( $instance = new static )->get_key_name();
+		foreach ( $ids as $id ) {
+			$model = static::find( $id );
 
-		foreach ( $instance->in( $key, $ids )->get() as $model ) {
-			if ( $model->delete() ) {
-				$count ++;
+			if ( $model && $model->delete() ) {
+				$count++;
 			}
 		}
 
@@ -416,6 +420,15 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 */
 	public function exists() {
 		return $this->exists;
+	}
+
+	/**
+	 * Return the object type name.
+	 *
+	 * @return string
+	 */
+	public function get_object_type() {
+		return $this->object_type;
 	}
 
 	/**

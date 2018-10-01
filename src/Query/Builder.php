@@ -31,7 +31,7 @@ class Builder {
 	 * Find a model by its primary key.
 	 *
 	 * @param  int|mixed $id
-	 * @return mixed
+	 * @return \Awethemes\WP_Object\Model
 	 */
 	public function find( $id ) {
 		$result = $this->query->get_by_id( $id );
@@ -44,7 +44,7 @@ class Builder {
 	}
 
 	/**
-	 * Execute the query.
+	 * Execute the query to get model items.
 	 *
 	 * @return \Awethemes\WP_Object\Collection
 	 */
@@ -76,7 +76,7 @@ class Builder {
 	 * @return $this
 	 */
 	public function select( $column = '*' ) {
-		$this->query->apply_query( 'select', $column );
+		$this->query->apply_query_var( 'select', $column );
 
 		return $this;
 	}
@@ -98,7 +98,7 @@ class Builder {
 	 * @return $this
 	 */
 	public function limit( $limit ) {
-		$this->query->apply_query( 'limit', (int) $limit );
+		$this->query->apply_query_var( 'limit', (int) $limit );
 
 		return $this;
 	}
@@ -120,7 +120,7 @@ class Builder {
 	 * @return $this
 	 */
 	public function offset( $offset ) {
-		$this->query->apply_query( 'offset', max( 0, $offset ) );
+		$this->query->apply_query_var( 'offset', max( 0, $offset ) );
 
 		return $this;
 	}
@@ -134,7 +134,9 @@ class Builder {
 	 * @return $this
 	 */
 	public function orderby( $orderby, $order = 'DESC' ) {
-		$this->query->apply_query( 'orderby', $orderby, $order );
+		$this->query->apply_query_var( 'order', $order );
+
+		$this->query->apply_query_var( 'orderby', $orderby );
 
 		return $this;
 	}
@@ -149,16 +151,6 @@ class Builder {
 	 */
 	public function for_page( $page, $per_page = 15 ) {
 		return $this->skip( ( $page - 1 ) * $per_page )->take( $per_page );
-	}
-
-	/**
-	 * Create and return an un-saved model instance.
-	 *
-	 * @param  array $attributes
-	 * @return \Awethemes\WP_Object\Model
-	 */
-	public function make( array $attributes = [] ) {
-		return $this->model->new_instance( $attributes );
 	}
 
 	/**
@@ -198,6 +190,7 @@ class Builder {
 
 		$this->query->set_table( $model->get_table() );
 		$this->query->set_primary_key( $model->get_key_name() );
+		$this->query->set_object_type( $model->get_object_type() );
 
 		return $this;
 	}
@@ -214,7 +207,7 @@ class Builder {
 			return $this->query->{$name}( ...$arguments );
 		}
 
-		$this->query->get_query_vars()->{$name}( ...$arguments );
+		call_user_func_array( [ $this->query->get_query_vars(), $name ], $arguments );
 
 		return $this;
 	}

@@ -16,57 +16,35 @@ abstract class Query {
 	 *
 	 * @var string
 	 */
-	protected $table;
+	public $table;
 
 	/**
 	 * The primary key name.
 	 *
 	 * @var string
 	 */
-	protected $primary_key;
+	public $primary_key;
 
 	/**
-	 * Find a model by its primary key.
+	 * The object type name.
 	 *
-	 * @param  int|mixed $id
-	 * @return mixed
+	 * @var string
 	 */
-	abstract public function get_by_id( $id );
+	public $object_type;
 
 	/**
-	 * Get the query vars.
+	 * The query vars.
 	 *
-	 * @return mixed
+	 * @var mixed
 	 */
-	abstract public function get_query_vars();
+	protected $query_vars;
 
 	/**
-	 * Execute the query to retrieves items.
+	 * An array of query vars to translation.
 	 *
-	 * @param  mixed $query_vars The query vars.
-	 * @return mixed
+	 * @var array
 	 */
-	abstract public function do_query( $query_vars );
-
-	/**
-	 * Extract items from the query.
-	 *
-	 * @param  mixed $items The raw items.
-	 * @return array
-	 */
-	public function extract_items( $items ) {
-		return $items;
-	}
-
-	/**
-	 * //
-	 *
-	 * @param string $name
-	 * @param mixed  ...$vars
-	 */
-	public function apply_query( $name, ...$vars ) {
-		throw new \InvalidArgumentException( 'Unsupported query [' . $name . ']' );
-	}
+	protected $trans_query_vars = [];
 
 	/**
 	 * Set the table name.
@@ -90,5 +68,88 @@ abstract class Query {
 		$this->primary_key = $primary_key;
 
 		return $this;
+	}
+
+	/**
+	 * Set the object type name.
+	 *
+	 * @param  string $object_type The object type name.
+	 * @return $this
+	 */
+	public function set_object_type( $object_type ) {
+		$this->object_type = $object_type;
+
+		return $this;
+	}
+
+	/**
+	 * Find a model by its primary key.
+	 *
+	 * @param  int|mixed $id
+	 * @return mixed
+	 */
+	abstract public function get_by_id( $id );
+
+	/**
+	 * Execute the query to retrieves items.
+	 *
+	 * @param  mixed $query_vars The query vars.
+	 * @return mixed
+	 */
+	abstract public function do_query( $query_vars );
+
+	/**
+	 * Extract items from the query.
+	 *
+	 * @param  mixed $items The raw items.
+	 * @return array
+	 */
+	public function extract_items( $items ) {
+		return $items;
+	}
+
+	/**
+	 * Get the query vars (or query builder).
+	 *
+	 * @return \Awethemes\Database\Builder|\Awethemes\WP_Object\Query\Query_Vars|mixed
+	 */
+	public function get_query_vars() {
+		return $this->query_vars;
+	}
+
+	/**
+	 * Apply a query_var into the query builder.
+	 *
+	 * @param  string $name
+	 * @param  mixed  ...$parameters
+	 */
+	public function apply_query_var( $name, ...$parameters ) {
+		$name = $this->translate_query_var( $name );
+
+		if ( is_array( $this->query_vars ) || $this->query_vars instanceof \ArrayAccess ) {
+			$this->query_vars[ $name ] = count( $parameters ) > 0 ? $parameters[0] : true;
+			return;
+		}
+
+		if ( method_exists( $this->query_vars, $name ) ) {
+			call_user_func_array( [ $this->query_vars, $name ], $parameters );
+			return;
+		}
+
+		throw new \InvalidArgumentException( 'Unsupported query [' . $name . ']' );
+	}
+
+	/**
+	 * Perform translate a query vars.
+	 *
+	 * @param  string $key The query var key name.
+	 * @return string
+	 */
+	protected function translate_query_var( $key ) {
+		if ( array_key_exists( $key, $this->trans_query_vars ) ) {
+			return $this->trans_query_vars[ $key ];
+		}
+
+		return $key;
 	}
 }

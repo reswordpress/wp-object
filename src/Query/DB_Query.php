@@ -5,60 +5,26 @@ use Awethemes\Database\Builder as QueryBuilder;
 
 class DB_Query extends Query {
 	/**
-	 * The database query builder instance.
-	 *
-	 * @var \Awethemes\Database\Builder
-	 */
-	protected $query;
-
-	protected $forward_methods = [
-		'orderby' => 'orderBy',
-	];
-
-	/**
 	 * Constructor.
 	 *
 	 * @param QueryBuilder $query The database query builder.
 	 */
 	public function __construct( QueryBuilder $query ) {
-		$this->query = $query;
+		$this->query_vars = $query;
 	}
 
 	/**
 	 * {@inheritdoc}
 	 */
 	public function get_by_id( $id ) {
-		return $this->query->where( $this->primary_key, $id )->first();
-	}
-
-	/**
-	 * Get the query vars.
-	 *
-	 * @return \Awethemes\Database\Builder
-	 */
-	public function get_query_vars() {
-		return $this->query;
-	}
-
-	/**
-	 * Execute the query to retrieves items.
-	 *
-	 * @param  \Awethemes\Database\Builder $query The query builder instance.
-	 * @return array
-	 */
-	public function do_query( $query ) {
-		return $query->get();
+		return $this->query_vars->where( $this->primary_key, $id )->first();
 	}
 
 	/**
 	 * {@inheritdoc}
 	 */
-	public function apply_query( $name, ...$vars ) {
-		if ( array_key_exists( $name, $this->forward_methods ) ) {
-			$name = $this->forward_methods[ $name ];
-		}
-
-		$this->query->{$name}( ...$vars );
+	public function do_query( $query ) {
+		return $query->get();
 	}
 
 	/**
