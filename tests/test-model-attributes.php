@@ -1,6 +1,6 @@
 <?php
 
-class Test_Model extends WP_UnitTestCase {
+class Test_Model_Attributes extends WP_UnitTestCase {
 	public function setUp() {
 		parent::setUp();
 	}
@@ -78,12 +78,4 @@ class Test_Model extends WP_UnitTestCase {
 }
 
 class ModelStub extends \Awethemes\WP_Object\Model {
-}
-
-class TestModelTable extends \Awethemes\WP_Object\Model {
-	protected $table = 'posts';
-}
-
-class TestModelPost extends \Awethemes\WP_Object\Post {
-	protected $table = 'users';
 }

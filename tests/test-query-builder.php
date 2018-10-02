@@ -4,6 +4,7 @@ use Awethemes\Database\Database;
 use Awethemes\WP_Object\Query\Builder;
 use Awethemes\WP_Object\Query\DB_Query;
 use Awethemes\WP_Object\Query\Post_Query;
+use Awethemes\WP_Object\Query\Term_Query;
 
 class Query_Builder_Test extends WP_UnitTestCase {
 	public function setUp() {
@@ -27,8 +28,8 @@ class Query_Builder_Test extends WP_UnitTestCase {
 		// Test fluent builder
 		$builder = new Builder( new Post_Query( [ 'suppress_filters' => true ]) );
 		$builder
-			->post__in( [ 1, 2, 3 ] )
-			->post__not_in( 4 )
+			->include( [ 1, 2, 3 ] )
+			->exclude( 4 )
 			->parent( 100 )
 			->ignore_sticky_posts()
 			->no_found_rows( false )
@@ -42,6 +43,21 @@ class Query_Builder_Test extends WP_UnitTestCase {
 		$this->assertFalse( $vars['no_found_rows'] );
 		$this->assertTrue( $vars['ignore_sticky_posts'] );
 		$this->assertEquals( 19, $vars['author'] );
+	}
+
+	public function testTermQueryBuilder() {
+		// Test basic query builder.
+		$builder = new Builder( new Term_Query() );
+
+		$vars = $builder->get_query()->get_query_vars();
+		$this->assertInstanceOf( \Awethemes\WP_Object\Query\Query_Vars::class, $vars );
+
+		$builder->select('term_id')->take( 10 )->skip( 5 )->orderby('term_id', 'ASC');
+		$this->assertEquals( 'term_id', $vars['fields'] );
+		$this->assertEquals( 10, $vars['number'] );
+		$this->assertEquals( 5, $vars['offset'] );
+		$this->assertEquals( 'ASC', $vars['order'] );
+		$this->assertEquals( 'term_id', $vars['orderby'] );
 	}
 
 	public function testDBQueryBuilder() {

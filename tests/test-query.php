@@ -4,6 +4,7 @@ use Awethemes\Database\Database;
 use Awethemes\WP_Object\Query\DB_Query;
 use Awethemes\WP_Object\Query\Post_Query;
 use Awethemes\WP_Object\Query\Query;
+use Awethemes\WP_Object\Query\Term_Query;
 
 class Query_Test extends WP_UnitTestCase {
 	public function setUp() {
@@ -62,5 +63,40 @@ class Query_Test extends WP_UnitTestCase {
 		$query->delete( $insert_id, true );
 		clean_post_cache( $insert_id );
 		$this->assertFalse( get_post_status( $insert_id ) );
+	}
+
+	public function testTermQuery() {
+		$query = new Term_Query();
+		$query->set_primary_key( 'term_id' );
+		$query->set_object_type( 'category' );
+
+		$this->assertInstanceOf( Query::class, $query );
+		$this->assertInstanceOf( \Awethemes\WP_Object\Query\Query_Vars::class, $query->get_query_vars() );
+		$this->assertInstanceOf( \WP_Term_Query::class, $query->do_query( [] ) );
+
+		// Find by ID.
+		$p1 = $this->factory->term->create( [
+			'name'     => 'category1',
+			'taxonomy' => 'category',
+		]);
+
+		$g1 = $query->get_by_id( $p1 );
+		$this->assertArrayHasKey( 'term_id', $g1 );
+		$this->assertEquals( $p1, $g1['term_id'] );
+
+		// Actions.
+		$insert_id = $query->insert( [ 'name' => 'category2' ] );
+		clean_term_cache( $insert_id );
+		$this->assertEquals( 'category2', get_term_field( 'name', $insert_id, 'category' ) );
+
+		$updated = $query->update( $insert_id, [ 'name' => 'ddd' ] );
+		clean_term_cache( $insert_id );
+		$this->assertNotFalse( $updated );
+		$this->assertGreaterThan( 0, $updated );
+		$this->assertEquals( 'ddd', get_term_field( 'name', $insert_id, 'category' ) );
+
+		$query->delete( $insert_id, false );
+		clean_term_cache( $insert_id );
+		$this->assertNull( get_term( $insert_id ) );
 	}
 }
