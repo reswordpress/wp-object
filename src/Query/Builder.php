@@ -34,13 +34,13 @@ class Builder {
 	 * @return \Awethemes\WP_Object\Model
 	 */
 	public function find( $id ) {
-		$result = $this->query->get_by_id( $id );
+		$model = $this->get_model();
 
-		if ( ! $result ) {
+		if ( ! $result = $this->query->get_by_id( $id ) ) {
 			return null;
 		}
 
-		return $this->model->new_from_builder( $result );
+		return $model->new_from_builder( $result );
 	}
 
 	/**
@@ -134,9 +134,7 @@ class Builder {
 	 * @return $this
 	 */
 	public function orderby( $orderby, $order = 'DESC' ) {
-		$this->query->apply_query_var( 'order', $order );
-
-		$this->query->apply_query_var( 'orderby', $orderby );
+		$this->query->apply_query_var( 'orderby', $orderby, $order );
 
 		return $this;
 	}
@@ -172,7 +170,7 @@ class Builder {
 	 */
 	public function get_model() {
 		if ( ! $this->model ) {
-			throw new \BadMethodCallException( 'The model is not defined.' );
+			throw new \RuntimeException( 'The model is not defined.' );
 		}
 
 		return $this->model;
@@ -196,6 +194,15 @@ class Builder {
 	}
 
 	/**
+	 * Returns the query implementation.
+	 *
+	 * @return \Awethemes\WP_Object\Query\Query
+	 */
+	public function get_query() {
+		return $this->query;
+	}
+
+	/**
 	 * Dynamically handle calls into the query instance.
 	 *
 	 * @param  string $name      The method name.
@@ -203,11 +210,12 @@ class Builder {
 	 * @return mixed
 	 */
 	public function __call( $name, $arguments ) {
-		if ( method_exists( $this->query, $name ) ) {
-			return $this->query->{$name}( ...$arguments );
+		// Fluent apply the query vars.
+		if ( method_exists( $query_vars = $this->query->get_query_vars(), $name ) ) {
+			$query_vars->{$name}( ...$arguments );
+		} else {
+			$this->query->apply_query_var( $name, ...$arguments );
 		}
-
-		call_user_func_array( [ $this->query->get_query_vars(), $name ], $arguments );
 
 		return $this;
 	}

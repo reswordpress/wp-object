@@ -14,6 +14,7 @@ class Post_Query extends Query {
 	protected $trans_query_vars = [
 		'select' => 'fields',
 		'limit'  => 'posts_per_page',
+		'parent' => 'post_parent',
 	];
 
 	/**
@@ -22,9 +23,9 @@ class Post_Query extends Query {
 	 * @param array|\Awethemes\WP_Object\Query\Query_Vars $main_query The main query vars.
 	 */
 	public function __construct( $main_query = [] ) {
-		$this->query_vars = $main_query instanceof Query_Vars
-			? $main_query
-			: new Query_Vars( $main_query );
+		$this->query_vars = ! $main_query instanceof Query_Vars
+			? new Query_Vars( $main_query )
+			: $main_query;
 	}
 
 	/**
@@ -33,7 +34,7 @@ class Post_Query extends Query {
 	public function get_by_id( $id ) {
 		$post = get_post( Utils::parse_object_id( $id ), ARRAY_A );
 
-		if ( ! $post || get_post_type( $post ) !== $this->object_type ) {
+		if ( ! $post || get_post_type( $id ) !== $this->object_type ) {
 			return null;
 		}
 
@@ -44,7 +45,11 @@ class Post_Query extends Query {
 	 * {@inheritdoc}
 	 */
 	public function do_query( $query_vars ) {
-		return new \WP_Query( $query_vars->to_array() );
+		if ( $query_vars instanceof Query_Vars ) {
+			$query_vars = $query_vars->to_array();
+		}
+
+		return new \WP_Query( $query_vars );
 	}
 
 	/**
@@ -55,39 +60,50 @@ class Post_Query extends Query {
 	}
 
 	/**
+	 * {@inheritdoc}
+	 */
+	public function apply_query_var( $name, ...$parameters ) {
+		if ( 'orderby' === $name ) {
+			list( $this->query_vars['orderby'], $this->query_vars['order'] ) = $parameters;
+			return;
+		}
+
+		parent::apply_query_var( $name, ...$parameters );
+	}
+
+	/**
 	 * Perform insert the model into the database.
 	 *
-	 * @param \Awethemes\WP_Object\Model $model      The model instance.
-	 * @param array                      $attributes The attributes to insert.
+	 * @param  array $attributes The attributes to insert.
 	 * @return int|null
 	 */
-	public function doing_insert( $model, $attributes ) {
+	public function insert( $attributes ) {
 		return wp_insert_post( $attributes, false );
 	}
 
 	/**
 	 * Perform update the model in the database.
 	 *
-	 * @param \Awethemes\WP_Object\Model $model The model instance.
-	 * @param array                      $dirty The attributes to update.
+	 * @param int   $id    The ID to update.
+	 * @param array $dirty The attributes for the update.
 	 * @return int|bool
 	 */
-	public function doing_update( $model, $dirty ) {
-		return (bool) Utils::update_the_post( $model->get_id(), $dirty );
+	public function update( $id, $dirty ) {
+		return (bool) Utils::update_the_post( $id, $dirty );
 	}
 
 	/**
 	 * Perform delete a model from the database.
 	 *
-	 * @param \Awethemes\WP_Object\Model $model The model instance.
-	 * @param bool                       $force Force delete or not.
+	 * @param int  $id    The ID to delete.
+	 * @param bool $force Force delete or not.
 	 * @return bool
 	 */
-	public function doing_delete( $model, $force ) {
-		if ( ! $force && EMPTY_TRASH_DAYS && 'trash' !== get_post_status( $model->get_id() ) ) {
-			$delete = wp_trash_post( $model->get_id() );
+	public function delete( $id, $force ) {
+		if ( ! $force && EMPTY_TRASH_DAYS && 'trash' !== get_post_status( $id ) ) {
+			$delete = wp_trash_post( $id );
 		} else {
-			$delete = wp_delete_post( $model->get_id(), true );
+			$delete = wp_delete_post( $id, true );
 		}
 
 		return ( ! is_null( $delete ) && ! is_wp_error( $delete ) && false !== $delete );

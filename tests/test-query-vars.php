@@ -9,6 +9,7 @@ class Query_Vars_Test extends WP_UnitTestCase {
 
 	public function testFluent() {
 		$query = new Query_Vars( [ 'post_type' => 'post' ] );
+		$this->assertInstanceOf( \ArrayAccess::class, $query);
 
 		$query->post__in     = 1;
 		$query->post__not_in = 2;

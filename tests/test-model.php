@@ -75,47 +75,15 @@ class Test_Model extends WP_UnitTestCase {
 		$this->assertEquals( [ 'first_name' => 'van', 'last_name' => 'anh' ], $model->only( 'first_name', 'last_name' ) );
 		$this->assertEquals( [ 'first_name' => 'van', 'last_name' => 'anh' ], $model->only( [ 'first_name', 'last_name' ] ) );
 	}
-
-	public function testNewInstanceReturnsNewInstanceWithAttributesSet() {
-		$model    = new ModelStub;
-		$instance = $model->new_instance( [ 'name' => 'van anh' ] );
-		$this->assertInstanceOf( ModelStub::class, $instance );
-		$this->assertEquals( 'van anh', $instance->name );
-	}
-
-	public function testModelUser() {
-		global $wpdb;
-
-		$this->factory->user->create_many( 4 );
-
-		$user = new TestModelUser( [
-			'user_login' => 'aaa',
-			'user_pass'  => '112',
-		] );
-
-		$user->save();
-		$user->delete();
-		$user->save();
-
-		dump( $user );
-		dump( $wpdb->last_query );
-	}
-
-	/*public function testModelUser() {
-		$this->factory->post->create_many( 4 );
-
-		$posts = PostModelUser::query()
-		                      ->get();
-		dump( $posts );
-	}*/
 }
 
 class ModelStub extends \Awethemes\WP_Object\Model {
 }
 
-class TestModelUser extends \Awethemes\WP_Object\Model {
-	protected $table = 'users';
+class TestModelTable extends \Awethemes\WP_Object\Model {
+	protected $table = 'posts';
 }
 
 class TestModelPost extends \Awethemes\WP_Object\Post {
+	protected $table = 'users';
 }

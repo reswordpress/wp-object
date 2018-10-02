@@ -2,11 +2,11 @@
 namespace Awethemes\WP_Object\Query;
 
 /**
- * Class Query
+ * Abstract Query.
  *
- * @method int|null doing_insert( $model, $attributes )
- * @method int|bool doing_update( $mode, $dirty )
- * @method bool     doing_delete( $model, $force )
+ * @method int|null insert( $attributes )
+ * @method int|bool update( $id, $dirty )
+ * @method bool     delete( $id, $force )
  *
  * @package Awethemes\WP_Object\Query
  */

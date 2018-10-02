@@ -189,7 +189,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 
 		if ( count( $dirty ) > 0 ) {
 			// Pass the update action into subclass to process.
-			if ( false === $this->doing( 'update', $dirty ) ) {
+			if ( false === $this->doing( 'update', $this->get_key_for_save(), $dirty ) ) {
 				return false;
 			}
 
@@ -241,16 +241,14 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	 * @return mixed
 	 */
 	protected function doing( $action, ...$vars ) {
-		$method = $method = "doing_{$action}";
-
 		// First, we will looking up for the actions in current model.
-		if ( method_exists( $this, $method ) ) {
+		if ( method_exists( $this, $method = "doing_{$action}" ) ) {
 			return $this->{$method}( ...$vars );
 		}
 
 		// Then, looking actions in the query.
-		if ( method_exists( $query = $this->new_query(), $method ) ) {
-			return $query->{$method}( $this, ...$vars );
+		if ( method_exists( $query = $this->new_query(), $action ) ) {
+			return $query->{$action}( ...$vars );
 		}
 
 		throw new \RuntimeException( 'The "' . $action . '" action is not supported in the [' . get_class( $this ) . ']' );
@@ -303,7 +301,7 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 		}
 
 		// Pass the action to subclass to process.
-		if ( ! $this->doing( 'delete', $force ) ) {
+		if ( ! $this->doing( 'delete', $this->get_key_for_save(), $force ) ) {
 			return false;
 		}
 
