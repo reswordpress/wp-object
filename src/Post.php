@@ -3,6 +3,13 @@ namespace Awethemes\WP_Object;
 
 class Post extends Model {
 	/**
+	 * Name of the post type.
+	 *
+	 * @var string
+	 */
+	protected $object_type = 'post';
+
+	/**
 	 * The table associated with the model.
 	 *
 	 * @var string
@@ -40,15 +47,6 @@ class Post extends Model {
 	];
 
 	/**
-	 * Returns the post type name.
-	 *
-	 * @return string
-	 */
-	public function get_post_type() {
-		return $this->object_type;
-	}
-
-	/**
 	 * Define a relationship with a taxonomy (polymorphic many-to-many).
 	 *
 	 * @param  string $related
@@ -57,6 +55,15 @@ class Post extends Model {
 	 * @return \Awethemes\WP_Object\Relations\Taxonomy
 	 */
 	public function taxonomy( $related, $taxomony ) {}
+
+	/**
+	 * Returns the post type name.
+	 *
+	 * @return string
+	 */
+	public function get_post_type() {
+		return $this->object_type;
+	}
 
 	/**
 	 * {@inheritdoc}

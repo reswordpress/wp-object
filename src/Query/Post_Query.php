@@ -12,21 +12,13 @@ class Post_Query extends Query {
 	 * @var array
 	 */
 	protected $trans_query_vars = [
-		'select' => 'fields',
-		'limit'  => 'posts_per_page',
-		'parent' => 'post_parent',
+		'select'  => 'fields',
+		'limit'   => 'posts_per_page',
+		'parent'  => 'post_parent',
+		'status'  => 'post_status',
+		'include' => 'post__in',
+		'exclude' => 'post__not_in',
 	];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param array|\Awethemes\WP_Object\Query\Query_Vars $main_query The main query vars.
-	 */
-	public function __construct( $main_query = [] ) {
-		$this->query_vars = ! $main_query instanceof Query_Vars
-			? new Query_Vars( $main_query )
-			: $main_query;
-	}
 
 	/**
 	 * {@inheritdoc}
