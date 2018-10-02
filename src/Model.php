@@ -2,17 +2,20 @@
 namespace Awethemes\WP_Object;
 
 use Awethemes\Database\Database;
+use Illuminate\Contracts\Support\Jsonable;
+use Illuminate\Contracts\Support\Arrayable;
 
 /**
- * Class Model
+ * Abstract model class.
  *
  * @method static static find( $id )
  *
  * @package Awethemes\WP_Object
  */
-abstract class Model implements \ArrayAccess, \JsonSerializable {
+abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializable {
 	use Concerns\Has_Attributes,
-		Concerns\Has_Events;
+		Concerns\Has_Events,
+		Utils\Serialization;
 
 	/**
 	 * Name of object type.
@@ -448,31 +451,12 @@ abstract class Model implements \ArrayAccess, \JsonSerializable {
 	}
 
 	/**
-	 * Retrieves the data for JSON serialization.
-	 *
-	 * @return array
-	 */
-	public function jsonSerialize() {
-		return $this->to_array();
-	}
-
-	/**
 	 * Retrieves the attributes as array.
 	 *
 	 * @return array
 	 */
 	public function to_array() {
 		return array_merge( [ 'id' => $this->get_id() ], $this->attributes );
-	}
-
-	/**
-	 * Convert the object to its JSON representation.
-	 *
-	 * @param  int $options JSON encode options.
-	 * @return string
-	 */
-	public function to_json( $options = 0 ) {
-		return json_encode( $this->jsonSerialize(), $options );
 	}
 
 	/**
