@@ -47,6 +47,17 @@ abstract class Query {
 	protected $trans_query_vars = [];
 
 	/**
+	 * Constructor.
+	 *
+	 * @param array|\Awethemes\WP_Object\Query\Query_Vars $main_query The main query vars.
+	 */
+	public function __construct( $main_query = [] ) {
+		$this->query_vars = ! $main_query instanceof Query_Vars
+			? new Query_Vars( $main_query )
+			: $main_query;
+	}
+
+	/**
 	 * Set the table name.
 	 *
 	 * @param  string $table The table name.
