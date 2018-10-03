@@ -53,14 +53,59 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	public $recently_created = false;
 
 	/**
+	 * The array of booted models.
+	 *
+	 * @var array
+	 */
+	protected static $booted = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array|mixed $attributes The model attributes.
 	 */
 	public function __construct( $attributes = [] ) {
+		$this->boot_if_not_booted();
+
 		$this->sync_original();
 
 		$this->fill( $attributes );
+	}
+
+	/**
+	 * Check if the model needs to be booted and if so, do it.
+	 *
+	 * @return void
+	 */
+	protected function boot_if_not_booted() {
+		if ( ! isset( static::$booted[ static::class ] ) ) {
+			static::$booted[ static::class ] = true;
+
+			$this->trigger( 'booting' );
+
+			static::boot();
+
+			$this->trigger( 'booted' );
+		}
+	}
+
+	/**
+	 * The "booting" method of the model.
+	 *
+	 * @return void
+	 */
+	protected static function boot() {
+		// static::boot_traits();
+		// static::setup_attributes();
+	}
+
+	/**
+	 * Clear the list of booted models so they will be re-booted.
+	 *
+	 * @return void
+	 */
+	public static function clear_booted_models() {
+		static::$booted = [];
 	}
 
 	/**
