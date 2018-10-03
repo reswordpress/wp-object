@@ -549,19 +549,6 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	}
 
 	/**
-	 * Handle dynamic method calls into the model.
-	 *
-	 * @param  string $method
-	 * @param  array  $parameters
-	 * @return mixed
-	 */
-	public function __call( $method, $parameters ) {
-		$builder = $this->new_query_builder();
-
-		return $builder->{$method}( ...$parameters );
-	}
-
-	/**
 	 * Handle dynamic static method calls into the method.
 	 *
 	 * @param  string $method
