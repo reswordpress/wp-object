@@ -1,10 +1,8 @@
 <?php
 
-class Test_Model_Attributes extends WP_UnitTestCase {
-	public function setUp() {
-		parent::setUp();
-	}
+use Awethemes\WP_Object\Model;
 
+class Test_Model_Attributes extends WP_UnitTestCase {
 	public function testAttributeManipulation() {
 		$model       = new ModelStub;
 		$model->name = 'foo';
@@ -77,5 +75,6 @@ class Test_Model_Attributes extends WP_UnitTestCase {
 	}
 }
 
-class ModelStub extends \Awethemes\WP_Object\Model {
+class ModelStub extends Model {
+	protected $object_type = 'poststub';
 }

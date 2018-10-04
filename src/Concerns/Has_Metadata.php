@@ -1,13 +1,9 @@
 <?php
 namespace Awethemes\WP_Object\Concerns;
 
-/**
- * Trait Has_Metadata
- *
- * @property array $attributes
- *
- * @package Awethemes\WP_Object
- */
+use Awethemes\WP_Object\Post;
+use Awethemes\WP_Object\Term;
+
 trait Has_Metadata {
 	/**
 	 * Type of object metadata is for (e.g., term, post).
@@ -35,7 +31,24 @@ trait Has_Metadata {
 	 *
 	 * @var array
 	 */
-	protected $mapping;
+	protected $mapping = [];
+
+	/**
+	 * Return type of object metadata is for (e.g., comment, post, or user)
+	 *
+	 * @return null|string
+	 */
+	public function get_meta_type() {
+		if ( $this instanceof Term ) {
+			return 'term';
+		}
+
+		if ( $this instanceof Post ) {
+			return 'post';
+		}
+
+		return null;
+	}
 
 	/**
 	 * Mapped metadata with the attributes.
