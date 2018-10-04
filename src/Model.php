@@ -295,7 +295,9 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 		}
 
 		// Then, looking actions in the query.
-		if ( method_exists( $query = $this->new_query(), $action ) ) {
+		$query = $this->new_query_builder()->get_query();
+
+		if ( method_exists( $query, $action ) ) {
 			return $query->{$action}( ...$vars );
 		}
 
@@ -382,6 +384,16 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	}
 
 	/**
+	 * Get a new query builder for the model's.
+	 *
+	 * @param array $query_vars The query.
+	 * @return \Awethemes\WP_Object\Query\Builder
+	 */
+	public function new_query_builder( $query_vars = [] ) {
+		return ( new Query\Builder( $this->new_query() ) )->set_model( $this );
+	}
+
+	/**
 	 * Get a new query instance.
 	 *
 	 * @return \Awethemes\WP_Object\Query\Query
@@ -397,16 +409,6 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	 */
 	public function new_db_query() {
 		return Database::table( $this->get_table() );
-	}
-
-	/**
-	 * Get a new query builder for the model's.
-	 *
-	 * @param array $query_vars The query.
-	 * @return \Awethemes\WP_Object\Query\Builder
-	 */
-	public function new_query_builder( $query_vars = [] ) {
-		return ( new Query\Builder( $this->new_query() ) )->set_model( $this );
 	}
 
 	/**

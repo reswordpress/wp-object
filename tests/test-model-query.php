@@ -44,6 +44,14 @@ class Test_Model_Query extends WP_UnitTestCase {
 
 		$this->assertNull( ModelTagStub::find( $cates[0] ) );
 	}
+
+	public function testDBQuery() {
+		$data = new ModelDBStub([
+			'post_type' => 'page',
+		]);
+
+		$data->save();
+	}
 }
 
 class ModelPageStub extends \Awethemes\WP_Object\Post {
