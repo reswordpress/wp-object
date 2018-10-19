@@ -8,7 +8,7 @@ use Illuminate\Contracts\Support\Arrayable;
 /**
  * Abstract model class.
  *
- * @method static static find( $id )
+ * @method static find( $id )
  *
  * @package Awethemes\WP_Object
  */
@@ -16,13 +16,6 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	use Concerns\Has_Attributes,
 		Concerns\Has_Events,
 		Utils\Serialization;
-
-	/**
-	 * Name of object type.
-	 *
-	 * @var string
-	 */
-	protected $object_type;
 
 	/**
 	 * The table associated with the model.
@@ -322,6 +315,7 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 		// each of them individually so that their events get fired properly with a
 		// correct set of attributes in case the developers wants to check these.
 		foreach ( $ids as $id ) {
+			/* @var $model \Awethemes\WP_Object\Model */
 			$model = static::find( $id );
 
 			if ( $model && $model->delete( true ) ) {
@@ -471,21 +465,12 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	}
 
 	/**
-	 * Return the object type name.
-	 *
-	 * @return string
-	 */
-	public function get_object_type() {
-		return $this->object_type;
-	}
-
-	/**
 	 * Get the table associated with the model.
 	 *
 	 * @return string
 	 */
 	public function get_table() {
-		return $this->table ?: $this->object_type;
+		return $this->table ?: 'posts';
 	}
 
 	/**
@@ -494,7 +479,7 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	 * @return string
 	 */
 	public function get_key_name() {
-		return $this->primary_key ?: 'ID';
+		return $this->primary_key;
 	}
 
 	/**
@@ -503,7 +488,7 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	 * @return array
 	 */
 	public function to_array() {
-		return array_merge( [ 'id' => $this->get_id() ], $this->attributes );
+		return $this->get_attributes();
 	}
 
 	/**

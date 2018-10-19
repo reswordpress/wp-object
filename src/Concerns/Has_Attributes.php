@@ -38,13 +38,9 @@ trait Has_Attributes {
 			return $this->get_id();
 		}
 
-		// Return a "null" if not found attribute.
-		if ( ! array_key_exists( $key, $this->attributes ) ) {
-			return null;
-		}
-
-		// The value should be returned.
-		return $this->attributes[ $key ];
+		return array_key_exists( $key, $this->attributes )
+			? $this->attributes[ $key ]
+			: null;
 	}
 
 	/**
@@ -58,6 +54,17 @@ trait Has_Attributes {
 		$this->attributes[ $key ] = $this->sanitize_attribute( $key, $value );
 
 		return $this;
+	}
+
+	/**
+	 * Santize attribute value before set.
+	 *
+	 * @param  string $key   Attribute key name.
+	 * @param  mixed  $value Attribute value.
+	 * @return mixed
+	 */
+	protected function sanitize_attribute( $key, $value ) {
+		return apply_filters( $this->prefix( 'sanitize_attribute' ), $value, $key, $this );
 	}
 
 	/**
@@ -225,18 +232,6 @@ trait Has_Attributes {
 	}
 
 	/**
-	 * Returns the attributes were changed but only in scope of $changes.
-	 *
-	 * @param  array        $changes    Scope of attributes changes.
-	 * @param  string|array $attributes The attributes.
-	 * @return array
-	 */
-	protected function get_changes_only( array $changes, $attributes ) {
-		_deprecated_function( __FUNCTION__, '2.0' );
-		return array_intersect( (array) $attributes, array_keys( $changes ) );
-	}
-
-	/**
 	 * Get the attributes that have been changed since last sync.
 	 *
 	 * @return array
@@ -287,16 +282,5 @@ trait Has_Attributes {
 		// Binary safe string comparison for numberic attribute.
 		return is_numeric( $current ) && is_numeric( $original ) &&
 			strcmp( (string) $current, (string) $original ) === 0;
-	}
-
-	/**
-	 * Santize attribute value before set.
-	 *
-	 * @param  string $key   Attribute key name.
-	 * @param  mixed  $value Attribute value.
-	 * @return mixed
-	 */
-	protected function sanitize_attribute( $key, $value ) {
-		return $value;
 	}
 }

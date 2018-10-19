@@ -2,6 +2,7 @@
 namespace Awethemes\WP_Object\Query;
 
 use Awethemes\WP_Object\Model;
+use Awethemes\WP_Object\WP_Object;
 
 class Builder {
 	/**
@@ -188,7 +189,10 @@ class Builder {
 
 		$this->query->set_table( $model->get_table() );
 		$this->query->set_primary_key( $model->get_key_name() );
-		$this->query->set_object_type( $model->get_object_type() );
+
+		if ( $model instanceof WP_Object ) {
+			$this->query->set_object_type( $model->get_object_type() );
+		}
 
 		return $this;
 	}

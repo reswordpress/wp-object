@@ -16,6 +16,13 @@ trait Serialization {
 	 *
 	 * @return array
 	 */
+	abstract public function to_array();
+
+	/**
+	 * Get the instance as an array.
+	 *
+	 * @return array
+	 */
 	public function toArray() {
 		return $this->to_array();
 	}

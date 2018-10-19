@@ -1,7 +1,9 @@
 <?php
 namespace Awethemes\WP_Object;
 
-class Post extends Model {
+class Post extends WP_Object {
+	use Concerns\Has_Metadata;
+
 	/**
 	 * Name of the post type.
 	 *
@@ -51,10 +53,10 @@ class Post extends Model {
 	 *
 	 * @param  string $related
 	 * @param  string $taxomony
-	 *
 	 * @return \Awethemes\WP_Object\Relations\Taxonomy
 	 */
-	public function taxonomy( $related, $taxomony ) {}
+	public function taxonomy( $related, $taxomony ) {
+	}
 
 	/**
 	 * Returns the post type name.

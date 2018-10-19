@@ -1,7 +1,7 @@
 <?php
 namespace Awethemes\WP_Object;
 
-class Term extends Model {
+class Term extends WP_Object {
 	/**
 	 * Name of the taxonomy.
 	 *
