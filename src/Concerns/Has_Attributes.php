@@ -28,13 +28,6 @@ trait Has_Attributes {
 	protected $changes = [];
 
 	/**
-	 * The attributes that should be cast to native types.
-	 *
-	 * @var array
-	 */
-	protected $casts = [];
-
-	/**
 	 * Get an attribute from this object.
 	 *
 	 * @param  string $key Attribute key name.
@@ -51,14 +44,7 @@ trait Has_Attributes {
 		}
 
 		// The value should be returned.
-		$value = $this->attributes[ $key ];
-
-		// Cast to native PHP type and return if has case.
-		if ( $this->has_cast( $key ) ) {
-			return $this->cast_attribute( $key, $value );
-		}
-
-		return $value;
+		return $this->attributes[ $key ];
 	}
 
 	/**
@@ -298,81 +284,9 @@ trait Has_Attributes {
 			return false;
 		}
 
-		if ( $this->has_cast( $key ) ) {
-			return $this->cast_attribute( $key, $current ) === $this->cast_attribute( $key, $original );
-		}
-
 		// Binary safe string comparison for numberic attribute.
 		return is_numeric( $current ) && is_numeric( $original ) &&
 			strcmp( (string) $current, (string) $original ) === 0;
-	}
-
-	/**
-	 * Get the casts array.
-	 *
-	 * @return array
-	 */
-	public function get_casts() {
-		return $this->casts;
-	}
-
-	/**
-	 * Determine whether an attribute should be cast to a native type.
-	 *
-	 * @param  string            $key   A string of attribute key.
-	 * @param  array|string|null $types Optional, list of possible types.
-	 * @return bool
-	 */
-	public function has_cast( $key, $types = null ) {
-		if ( array_key_exists( $key, $this->get_casts() ) ) {
-			return $types ? in_array( $this->get_cast_type( $key ), (array) $types, true ) : true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Get the type of cast for a attribute.
-	 *
-	 * @param  string $key A string of attribute key.
-	 * @return string
-	 */
-	protected function get_cast_type( $key ) {
-		$casts = $this->get_casts();
-
-		return strtolower( trim( $casts[ $key ] ) );
-	}
-
-	/**
-	 * Cast an attribute to a native PHP type.
-	 *
-	 * @param  string $key   A string of attribute key.
-	 * @param  mixed  $value The raw attribute value.
-	 * @return mixed
-	 */
-	protected function cast_attribute( $key, $value ) {
-		if ( is_null( $value ) ) {
-			return $value;
-		}
-
-		switch ( $this->get_cast_type( $key ) ) {
-			case 'int':
-			case 'integer':
-				return (int) $value;
-			case 'real':
-			case 'float':
-			case 'double':
-				return (float) $value;
-			case 'string':
-				return (string) $value;
-			case 'array':
-				return (array) $value;
-			case 'bool':
-			case 'boolean':
-				return (bool) $value;
-			default:
-				return $value;
-		}
 	}
 
 	/**
