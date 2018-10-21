@@ -1,10 +1,10 @@
 <?php
-namespace Awethemes\WP_Object\Concerns;
+namespace Awethemes\WP_Object\Deprecated;
 
 use Awethemes\WP_Object\Post;
 use Awethemes\WP_Object\Term;
 
-trait Has_Metadata {
+trait Metadata {
 	/**
 	 * Type of object metadata is for (e.g., term, post).
 	 *
@@ -47,7 +47,7 @@ trait Has_Metadata {
 			return 'post';
 		}
 
-		return null;
+		return $this->meta_type;
 	}
 
 	/**
@@ -56,11 +56,12 @@ trait Has_Metadata {
 	 * @return void
 	 */
 	protected function setup_metadata() {
-		if ( ! $this->meta_type ) {
+		if ( ! $this->get_meta_type() ) {
 			return;
 		}
 
 		$metadata = $this->get_metadata();
+
 		foreach ( $this->get_mapping() as $attribute => $meta ) {
 			if ( isset( $metadata[ $meta ] ) ) {
 				$this->set_attribute( $attribute, $metadata[ $meta ] );
@@ -188,8 +189,7 @@ trait Has_Metadata {
 			return count( $mapping ) > 0;
 		}
 
-		$attributes = is_array( $attributes ) ? $attributes : func_get_args();
-		foreach ( $attributes as $attribute ) {
+		foreach ( is_array( $attributes ) ? $attributes : func_get_args() as $attribute ) {
 			if ( array_key_exists( $attribute, $mapping ) ) {
 				return true;
 			}
@@ -279,6 +279,7 @@ trait Has_Metadata {
 		}
 
 		$updated = [];
+
 		foreach ( $changes as $attribute ) {
 			$meta_key = $this->get_mapping_metakey( $attribute );
 			if ( is_null( $meta_key ) ) {

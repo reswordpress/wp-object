@@ -2,8 +2,6 @@
 namespace Awethemes\WP_Object;
 
 class Post extends WP_Object {
-	use Concerns\Has_Metadata;
-
 	/**
 	 * Name of the post type.
 	 *
@@ -47,16 +45,6 @@ class Post extends WP_Object {
 		'post_mime_type'        => '',
 		'comment_count'         => 0,
 	];
-
-	/**
-	 * Define a relationship with a taxonomy (polymorphic many-to-many).
-	 *
-	 * @param  string $related
-	 * @param  string $taxomony
-	 * @return \Awethemes\WP_Object\Relations\Taxonomy
-	 */
-	public function taxonomy( $related, $taxomony ) {
-	}
 
 	/**
 	 * Returns the post type name.

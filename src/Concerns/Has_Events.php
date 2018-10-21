@@ -12,6 +12,13 @@ trait Has_Events {
 	protected $observables = [];
 
 	/**
+	 * Store the hooks prefix.
+	 *
+	 * @var array
+	 */
+	protected static $hooks = [];
+
+	/**
 	 * Register a model event with the dispatcher.
 	 *
 	 * @param  string          $event
@@ -148,104 +155,5 @@ trait Has_Events {
 	 */
 	public static function deleted( $callback ) {
 		static::on( 'deleted', $callback );
-	}
-
-	/**
-	 * Register observers with the model.
-	 *
-	 * @param  object|array|string $classes
-	 *
-	 * @return void
-	 */
-	public static function observe( $classes ) {
-		$instance = new static;
-
-		foreach ( Arr::wrap( $classes ) as $class ) {
-			$instance->registerObserver( $class );
-		}
-	}
-
-	/**
-	 * Register a single observer with the model.
-	 *
-	 * @param  object|string $class
-	 *
-	 * @return void
-	 */
-	protected function registerObserver( $class ) {
-		$className = is_string( $class ) ? $class : get_class( $class );
-
-		// When registering a model observer, we will spin through the possible events
-		// and determine if this observer has that method. If it does, we will hook
-		// it into the model's event system, making it convenient to watch these.
-		foreach ( $this->getObservableEvents() as $event ) {
-			if ( method_exists( $class, $event ) ) {
-				static::on( $event, $className . '@' . $event );
-			}
-		}
-	}
-
-	/**
-	 * Get the observable event names.
-	 *
-	 * @return array
-	 */
-	public function getObservableEvents() {
-		return array_merge(
-			[
-				'retrieved',
-				'creating',
-				'created',
-				'updating',
-				'updated',
-				'saving',
-				'saved',
-				'restoring',
-				'restored',
-				'deleting',
-				'deleted',
-				'forceDeleted',
-			],
-			$this->observables
-		);
-	}
-
-	/**
-	 * Set the observable event names.
-	 *
-	 * @param  array $observables
-	 *
-	 * @return $this
-	 */
-	public function setObservableEvents( array $observables ) {
-		$this->observables = $observables;
-
-		return $this;
-	}
-
-	/**
-	 * Add an observable event name.
-	 *
-	 * @param  array|mixed $observables
-	 *
-	 * @return void
-	 */
-	public function addObservableEvents( $observables ) {
-		$this->observables = array_unique( array_merge(
-			$this->observables, is_array( $observables ) ? $observables : func_get_args()
-		) );
-	}
-
-	/**
-	 * Remove an observable event name.
-	 *
-	 * @param  array|mixed $observables
-	 *
-	 * @return void
-	 */
-	public function removeObservableEvents( $observables ) {
-		$this->observables = array_diff(
-			$this->observables, is_array( $observables ) ? $observables : func_get_args()
-		);
 	}
 }

@@ -2,6 +2,8 @@
 namespace Awethemes\WP_Object;
 
 use Awethemes\Database\Database;
+use Awethemes\WP_Object\Utils\Utils;
+use Awethemes\WP_Object\Utils\Serialization;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Contracts\Support\Arrayable;
 
@@ -15,7 +17,7 @@ use Illuminate\Contracts\Support\Arrayable;
 abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializable {
 	use Concerns\Has_Attributes,
 		Concerns\Has_Events,
-		Utils\Serialization;
+		Serialization;
 
 	/**
 	 * The table associated with the model.
@@ -53,12 +55,26 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	protected static $booted = [];
 
 	/**
+	 * The array of trait initializers that will be called on each new instance.
+	 *
+	 * @var array
+	 */
+	protected static $trait_initializers = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array|mixed $attributes The model attributes.
 	 */
 	public function __construct( $attributes = [] ) {
-		$this->boot_if_not_booted();
+		$this->maybe_boot();
+
+		// Forward initialize to the sub-class.
+		if ( method_exists( $this, 'initialize' ) ) {
+			$this->initialize( $attributes );
+		}
+
+		$this->initialize_traits();
 
 		$this->sync_original();
 
@@ -70,7 +86,7 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	 *
 	 * @return void
 	 */
-	protected function boot_if_not_booted() {
+	protected function maybe_boot() {
 		if ( ! isset( static::$booted[ static::class ] ) ) {
 			static::$booted[ static::class ] = true;
 
@@ -88,8 +104,7 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	 * @return void
 	 */
 	protected static function boot() {
-		// static::boot_traits();
-		// static::setup_attributes();
+		static::boot_traits();
 	}
 
 	/**
@@ -99,6 +114,50 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	 */
 	public static function clear_booted_models() {
 		static::$booted = [];
+	}
+
+	/**
+	 * Boot all of the bootable traits on the model.
+	 *
+	 * @return void
+	 */
+	protected static function boot_traits() {
+		$class = static::class;
+
+		$booted = [];
+		static::$trait_initializers[ $class ] = [];
+
+		foreach ( Utils::class_uses( $class ) as $trait ) {
+			$trait = str_replace( '_trait', '',
+				strtolower( basename( str_replace( '\\', '/', $trait ) ) )
+			);
+
+			$boot_method       = 'boot_' . $trait;
+			$initialize_method = 'initialize_' . $trait;
+
+			if ( method_exists( $class, $boot_method ) && ! in_array( $boot_method, $booted ) ) {
+				forward_static_call( [ $class, $boot_method ] );
+				$booted[] = $boot_method;
+			}
+
+			if ( method_exists( $class, $initialize_method ) ) {
+				static::$trait_initializers[ $class ][] = $initialize_method;
+				static::$trait_initializers[ $class ]   = array_unique( static::$trait_initializers[ $class ] );
+			}
+		}
+	}
+
+	/**
+	 * Initialize any initializable traits on the model.
+	 *
+	 * @return void
+	 */
+	protected function initialize_traits() {
+		if ( array_key_exists( static::class, static::$trait_initializers ) ) {
+			foreach ( static::$trait_initializers[ static::class ] as $method ) {
+				$this->{$method}();
+			}
+		}
 	}
 
 	/**
@@ -275,29 +334,6 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	}
 
 	/**
-	 * Call the doing a action.
-	 *
-	 * @param  string $action  The action name.
-	 * @param  mixed  ...$vars The action parameters.
-	 * @return mixed
-	 */
-	protected function doing( $action, ...$vars ) {
-		// First, we will looking up for the actions in current model.
-		if ( method_exists( $this, $method = "doing_{$action}" ) ) {
-			return $this->{$method}( ...$vars );
-		}
-
-		// Then, looking actions in the query.
-		$query = $this->new_query_builder()->get_query();
-
-		if ( method_exists( $query, $action ) ) {
-			return $query->{$action}( ...$vars );
-		}
-
-		throw new \RuntimeException( 'The "' . $action . '" action is not supported in the [' . get_class( $this ) . ']' );
-	}
-
-	/**
 	 * Destroy the models for the given IDs.
 	 *
 	 * @param  array|int $ids The IDs.
@@ -356,6 +392,29 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 		$this->trigger( 'deleted' );
 
 		return true;
+	}
+
+	/**
+	 * Call the doing a action.
+	 *
+	 * @param  string $action  The action name.
+	 * @param  mixed  ...$vars The action parameters.
+	 * @return mixed
+	 */
+	protected function doing( $action, ...$vars ) {
+		// First, we will looking up for the actions in current model.
+		if ( method_exists( $this, $method = "doing_{$action}" ) ) {
+			return $this->{$method}( ...$vars );
+		}
+
+		// Then, looking actions in the query.
+		$query = $this->new_query_builder()->get_query();
+
+		if ( method_exists( $query, $action ) ) {
+			return $query->{$action}( ...$vars );
+		}
+
+		throw new \RuntimeException( 'The "' . $action . '" action is not supported in the [' . get_class( $this ) . ']' );
 	}
 
 	/**
