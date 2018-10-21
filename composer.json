@@ -17,7 +17,6 @@
     "require": {
         "php": ">=5.6.0",
         "awethemes/database": "^1.0",
-        "awethemes/wp-relationships": "dev-master",
         "tightenco/collect": "5.4.*"
     },
     "require-dev": {
