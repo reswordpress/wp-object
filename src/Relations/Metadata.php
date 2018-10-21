@@ -1,9 +1,17 @@
 <?php
+
 namespace Awethemes\WP_Object\Relations;
 
 use Awethemes\WP_Object\Model;
 
 class Metadata {
+	/**
+	 * //
+	 *
+	 * @var \Awethemes\WP_Object\Model
+	 */
+	protected $model;
+
 	/**
 	 * The meta type (post, term, user, etc.).
 	 *
@@ -14,10 +22,12 @@ class Metadata {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $meta_type
+	 * @param \Awethemes\WP_Object\Model $model
+	 * @param string                     $meta_type
 	 */
 	public function __construct( Model $model, $meta_type = 'post' ) {
 		$this->meta_type = $meta_type;
+		$this->model     = $model;
 	}
 
 	/**
@@ -38,7 +48,7 @@ class Metadata {
 	 * @return int|false
 	 */
 	public function add_meta( $meta_key, $meta_value ) {
-		return add_metadata( $this->meta_type, $this->get_id(), $meta_key, $meta_value, true );
+		return add_metadata( $this->meta_type, $this->model->get_id(), $meta_key, $meta_value, true );
 	}
 
 	/**
@@ -49,19 +59,7 @@ class Metadata {
 	 * @return bool
 	 */
 	public function update_meta( $meta_key, $meta_value ) {
-		$updated = update_metadata( $this->meta_type, $this->get_id(), $meta_key, $meta_value );
-
-		if ( false !== $updated ) {
-			$this->metadata[ $meta_key ] = $meta_value;
-
-			if ( $attribute = $this->get_mapping_attribute( $meta_key ) ) {
-				$this->set_attribute( $attribute, $meta_value );
-			}
-
-			return true;
-		}
-
-		return false;
+		return update_metadata( $this->meta_type, $this->model->get_id(), $meta_key, $meta_value );
 	}
 
 	/**
@@ -71,6 +69,6 @@ class Metadata {
 	 * @return bool
 	 */
 	public function delete_meta( $meta_key ) {
-		return delete_metadata( $this->meta_type, $this->get_id(), $meta_key, '', false );
+		return delete_metadata( $this->meta_type, $this->model->get_id(), $meta_key, '', false );
 	}
 }
