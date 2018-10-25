@@ -19,7 +19,7 @@ class WP_Object extends Model {
 	 *
 	 * @var string
 	 */
-	protected $object_type;
+	protected $object_type = 'post';
 
 	/**
 	 * The WordPress type for object, Ex: "post" and "term".
