@@ -22,7 +22,7 @@ class WP_Object extends Model {
 	protected $object_type;
 
 	/**
-	 * WordPress type for object, Ex: "post" and "term".
+	 * The WordPress type for object, Ex: "post" and "term".
 	 *
 	 * @var string
 	 */
@@ -41,6 +41,15 @@ class WP_Object extends Model {
 	 * @var mixed
 	 */
 	protected $instance_data;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param mixed $object The object instance or ID.
+	 */
+	public function __construct( $object = null ) {
+		parent::__construct( $object ?: [] );
+	}
 
 	/**
 	 * Initialize the object.
@@ -173,6 +182,18 @@ class WP_Object extends Model {
 	}
 
 	/**
+	 * {@inheritdoc}
+	 */
+	public function new_query() {
+		return new Query\Post_Query( [
+			'post_type'           => $this->get_object_type(),
+			'no_found_rows'       => true,
+			'ignore_sticky_posts' => true,
+			'posts_per_page'      => -1,
+		] );
+	}
+
+	/**
 	 * Return the object type name.
 	 *
 	 * @return string
@@ -182,9 +203,7 @@ class WP_Object extends Model {
 	}
 
 	/**
-	 * Get the value of the model's primary key.
-	 *
-	 * @return int|null
+	 * {@inheritdoc}
 	 */
 	public function get_key() {
 		$key = parent::get_key();
@@ -193,23 +212,7 @@ class WP_Object extends Model {
 	}
 
 	/**
-	 * Dynamically retrieve attributes on the model.
-	 *
-	 * @param  string $key The attribute key name.
-	 * @return mixed
-	 */
-	public function __get( $key ) {
-		if ( 'instance' === $key ) {
-			return $this->instance_data;
-		}
-
-		return $this->get_attribute( $key );
-	}
-
-	/**
-	 * Retrieves the attributes as array.
-	 *
-	 * @return array
+	 * {@inheritdoc}
 	 */
 	public function to_array() {
 		if ( array_key_exists( 'id', $attributes = $this->get_attributes() ) ) {
@@ -220,32 +223,13 @@ class WP_Object extends Model {
 	}
 
 	/**
-	 * Parse the object_id.
-	 *
-	 * @param  mixed $object The object.
-	 * @return int|null
+	 * {@inheritdoc}
 	 */
-	public static function parse_object_id( $object ) {
-		return Utils::parse_object_id( $object );
-	}
+	public function __get( $key ) {
+		if ( 'instance' === $key ) {
+			return $this->instance_data;
+		}
 
-	/**
-	 * Helper: Get terms as IDs from a taxonomy.
-	 *
-	 * @param  string $taxonomy Taxonomy name.
-	 * @return array
-	 */
-	protected function get_term_ids( $taxonomy ) {
-		return Utils::get_term_ids( $this->get_id(), $taxonomy );
-	}
-
-	/**
-	 * Helper: Safely update a wordpress post.
-	 *
-	 * @param  array $post_data An array post data to update.
-	 * @return bool|null
-	 */
-	protected function update_the_post( array $post_data ) {
-		return Utils::update_the_post( $this->get_id(), $post_data );
+		return $this->get_attribute( $key );
 	}
 }

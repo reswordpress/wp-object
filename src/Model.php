@@ -10,7 +10,10 @@ use Illuminate\Contracts\Support\Arrayable;
 /**
  * Abstract model class.
  *
- * @method static find( $id )
+ * @method static self find( $id )
+ * @method int         doing_insert( $attributes )
+ * @method bool        doing_update( $id, $dirty )
+ * @method bool        doing_delete( $id, $force = false )
  *
  * @package Awethemes\WP_Object
  */

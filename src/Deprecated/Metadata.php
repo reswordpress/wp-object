@@ -33,7 +33,11 @@ trait Metadata {
 			return 'post';
 		}
 
-		return isset( $this->meta_type ) ? $this->meta_type : null;
+		if ( isset( $this->meta_type ) ) {
+			return $this->meta_type;
+		}
+
+		return $this->wp_type;
 	}
 
 	/**
@@ -198,7 +202,11 @@ trait Metadata {
 	 * @return array
 	 */
 	public function get_mapping() {
-		if ( is_null( $this->mapping ) ) {
+		if ( empty( $this->maps ) ) {
+			return [];
+		}
+
+		if ( ! $this->mapping ) {
 			$this->mapping = $this->normalize_mapping();
 		}
 
