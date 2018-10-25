@@ -6,25 +6,11 @@ use Awethemes\WP_Object\Term;
 
 trait Metadata {
 	/**
-	 * Type of object metadata is for (e.g., term, post).
-	 *
-	 * @var string
-	 */
-	protected $meta_type = 'post';
-
-	/**
 	 * An array of attributes mapped with metadata.
 	 *
 	 * @var array
 	 */
 	protected $maps = [];
-
-	/**
-	 * Store additional metadata of this object.
-	 *
-	 * @var array
-	 */
-	protected $metadata;
 
 	/**
 	 * Store normalized of mapping metadata.
@@ -47,7 +33,7 @@ trait Metadata {
 			return 'post';
 		}
 
-		return $this->meta_type;
+		return isset( $this->meta_type ) ? $this->meta_type : null;
 	}
 
 	/**
@@ -56,33 +42,25 @@ trait Metadata {
 	 * @return void
 	 */
 	protected function setup_metadata() {
-		if ( ! $this->get_meta_type() ) {
-			return;
-		}
-
-		$metadata = $this->get_metadata();
-
-		foreach ( $this->get_mapping() as $attribute => $meta ) {
-			if ( isset( $metadata[ $meta ] ) ) {
-				$this->set_attribute( $attribute, $metadata[ $meta ] );
-			}
+		if ( $this->get_meta_type() ) {
+			$this->fill( $this->get_metadata() );
 		}
 	}
 
 	/**
 	 * Get a metadata by meta key.
 	 *
-	 * @param  string $key The metadata key.
+	 * @param  string $meta_key The metadata key.
 	 * @return mixed|null
 	 */
-	public function get_meta( $key ) {
-		$metadata = $this->get_metadata();
+	public function get_meta( $meta_key ) {
+		$meta_value = get_metadata( $this->get_meta_type(), $this->get_id(), $meta_key, true );
 
-		if ( ! array_key_exists( $key, $metadata ) ) {
+		if ( false === $meta_value ) {
 			return null;
 		}
 
-		return $metadata[ $key ];
+		return $meta_value;
 	}
 
 	/**
@@ -93,7 +71,15 @@ trait Metadata {
 	 * @return int|false
 	 */
 	public function add_meta( $meta_key, $meta_value ) {
-		return add_metadata( $this->meta_type, $this->get_id(), $meta_key, $meta_value, true );
+		$added = add_metadata( $this->get_meta_type(), $this->get_id(), $meta_key, $meta_value, true );
+
+		if ( false === $added ) {
+			return false;
+		}
+
+		$this->update_attribute_meta( $meta_key, $meta_value );
+
+		return $added;
 	}
 
 	/**
@@ -104,19 +90,15 @@ trait Metadata {
 	 * @return bool
 	 */
 	public function update_meta( $meta_key, $meta_value ) {
-		$updated = update_metadata( $this->meta_type, $this->get_id(), $meta_key, $meta_value );
+		$updated = update_metadata( $this->get_meta_type(), $this->get_id(), $meta_key, $meta_value );
 
-		if ( false !== $updated ) {
-			$this->metadata[ $meta_key ] = $meta_value;
-
-			if ( $attribute = $this->get_mapping_attribute( $meta_key ) ) {
-				$this->set_attribute( $attribute, $meta_value );
-			}
-
-			return true;
+		if ( false === $updated ) {
+			return false;
 		}
 
-		return false;
+		$this->update_attribute_meta( $meta_key, $meta_value );
+
+		return true;
 	}
 
 	/**
@@ -126,7 +108,27 @@ trait Metadata {
 	 * @return bool
 	 */
 	public function delete_meta( $meta_key ) {
-		return delete_metadata( $this->meta_type, $this->get_id(), $meta_key, '', false );
+		$deleted = delete_metadata( $this->get_meta_type(), $this->get_id(), $meta_key, '', false );
+
+		if ( false === $deleted ) {
+			return false;
+		}
+
+		$this->update_attribute_meta( $meta_key, null );
+
+		return true;
+	}
+
+	/**
+	 * Update a attribute by meta_key.
+	 *
+	 * @param string $meta_key
+	 * @param mixed  $meta_value
+	 */
+	protected function update_attribute_meta( $meta_key, $meta_value ) {
+		if ( $attribute = $this->get_mapping_attribute( $meta_key ) ) {
+			$this->set_attribute( $attribute, $meta_value );
+		}
 	}
 
 	/**
@@ -135,42 +137,10 @@ trait Metadata {
 	 * @return array
 	 */
 	public function get_metadata() {
-		// Fetching the meta-data for the first time.
-		if ( is_null( $this->metadata ) ) {
-			$this->metadata = $this->fetch_metadata();
-		}
-
-		return $this->metadata;
-	}
-
-	/**
-	 * Fetch metadata of current object.
-	 *
-	 * @return array
-	 */
-	protected function fetch_metadata() {
-		// If no meta_type found, don't do anything, leave
-		// and return an empty array.
-		if ( ! $this->meta_type ) {
-			return array();
-		}
-
-		// Get raw metadata of this object.
-		// The meta type is defined by {$this->meta_type} - 'post' by default,
-		// and it can be "term", dependent your object you working for.
-		$raw_metadata = get_metadata( $this->meta_type, $this->get_id() );
-
 		$metadata = [];
 
-		// Loop through raw metadata and setup object metadata.
-		foreach ( $raw_metadata as $meta_key => $meta_values ) {
-			if ( in_array( $meta_key, [ '_edit_lock', '_edit_last' ] ) ) {
-				continue;
-			}
-
-			// AweBooking work only with single meta.
-			// So just try unserialize the first value.
-			$metadata[ $meta_key ] = maybe_unserialize( $meta_values[0] );
+		foreach ( $this->get_mapping() as $attribute => $meta_key ) {
+			$metadata[ $attribute ] = $this->get_meta( $meta_key );
 		}
 
 		return $metadata;
@@ -223,7 +193,7 @@ trait Metadata {
 	}
 
 	/**
-	 * Get normalized of mapping.
+	 * Get a list normalized of mapping.
 	 *
 	 * @return array
 	 */
@@ -263,7 +233,7 @@ trait Metadata {
 	 * @return array|null
 	 */
 	protected function perform_update_metadata( array $changes ) {
-		if ( ! $this->meta_type ) {
+		if ( ! $this->get_meta_type() ) {
 			return null;
 		}
 
@@ -282,6 +252,7 @@ trait Metadata {
 
 		foreach ( $changes as $attribute ) {
 			$meta_key = $this->get_mapping_metakey( $attribute );
+
 			if ( is_null( $meta_key ) ) {
 				continue;
 			}

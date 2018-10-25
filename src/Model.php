@@ -78,7 +78,9 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 
 		$this->sync_original();
 
-		$this->fill( $attributes );
+		if ( is_array( $attributes ) ) {
+			$this->fill( $attributes );
+		}
 	}
 
 	/**
@@ -502,7 +504,11 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	 * @return int|null
 	 */
 	public function get_key() {
-		return $this->get_attribute( $this->get_key_name() );
+		if ( array_key_exists( $this->get_key_name(), $this->attributes ) ) {
+			return $this->attributes[ $this->get_key_name() ];
+		}
+
+		return null;
 	}
 
 	/**

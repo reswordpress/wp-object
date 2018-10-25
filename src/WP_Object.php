@@ -141,7 +141,6 @@ class WP_Object extends Model {
 	protected function resetup() {
 		$this->setup_instance();
 
-		$this->metadata = $this->fetch_metadata();
 		$this->setup_metadata();
 
 		$this->setup();
@@ -180,6 +179,17 @@ class WP_Object extends Model {
 	 */
 	public function get_object_type() {
 		return $this->object_type;
+	}
+
+	/**
+	 * Get the value of the model's primary key.
+	 *
+	 * @return int|null
+	 */
+	public function get_key() {
+		$key = parent::get_key();
+
+		return $key ?: $this->id;
 	}
 
 	/**

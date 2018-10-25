@@ -35,7 +35,7 @@ trait Has_Attributes {
 	 */
 	public function get_attribute( $key ) {
 		if ( 'id' === $key ) {
-			return $this->get_id();
+			return $this->get_key();
 		}
 
 		return array_key_exists( $key, $this->attributes )
