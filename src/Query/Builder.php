@@ -29,6 +29,16 @@ class Builder {
 	}
 
 	/**
+	 * Return a raw model by given a ID.
+	 *
+	 * @param  int|mixed $id
+	 * @return \Awethemes\WP_Object\Model
+	 */
+	public function raw( $id ) {
+		return $this->query->get_by_id( $id );
+	}
+
+	/**
 	 * Find a model by its primary key.
 	 *
 	 * @param  int|mixed $id
@@ -214,11 +224,14 @@ class Builder {
 	 * @return mixed
 	 */
 	public function __call( $name, $arguments ) {
-		// Fluent apply the query vars.
-		if ( method_exists( $query_vars = $this->query->get_query_vars(), $name ) ) {
+		if ( method_exists( $query = $this->get_query(), $name ) ) {
+			return $query->{$name}( ...$arguments );
+		}
+
+		if ( method_exists( $query_vars = $query->get_query_vars(), $name ) ) {
 			$query_vars->{$name}( ...$arguments );
 		} else {
-			$this->query->apply_query_var( $name, ...$arguments );
+			$query->apply_query_var( $name, ...$arguments );
 		}
 
 		return $this;

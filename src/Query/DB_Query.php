@@ -85,4 +85,11 @@ class DB_Query extends Query {
 	protected function get_query_for_save( $id ) {
 		return Database::table( $this->table )->where( $this->primary_key, '=', $id );
 	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	public function to_array() {
+		return [];
+	}
 }

@@ -16,7 +16,7 @@ trait Has_Events {
 	 *
 	 * @var array
 	 */
-	protected static $hooks = [];
+	protected static $prefix = 'wp.';
 
 	/**
 	 * Register a model event with the dispatcher.
@@ -49,13 +49,13 @@ trait Has_Events {
 	}
 
 	/**
-	 * Prefix for action or filter hooks.
+	 * Helper: Prefix for action and filter hooks for this object.
 	 *
-	 * @param  string $name The event name.
+	 * @param  string $hook_name Hook name without prefix.
 	 * @return string
 	 */
-	protected function prefix( $name ) {
-		return sprintf( 'wp_%s_%s', $this->object_type, $name );
+	protected function prefix( $hook_name ) {
+		return sprintf( '%s/%s/%s', static::$prefix, $this->object_type, $hook_name );
 	}
 
 	/**

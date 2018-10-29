@@ -23,6 +23,13 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 		Serialization;
 
 	/**
+	 * Name of object type.
+	 *
+	 * @var string
+	 */
+	protected $object_type;
+
+	/**
 	 * The table associated with the model.
 	 *
 	 * @var string
@@ -241,6 +248,10 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 			return false;
 		}
 
+		if ( $this->recently_created ) {
+			$this->recently_created = false;
+		}
+
 		// If the model already exists in the database we can just update our record
 		// that is already in this database using the current IDs in this "where"
 		// clause to only update this model. Otherwise, we'll just insert them.
@@ -263,11 +274,11 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	 * @return void
 	 */
 	protected function finish_save() {
-		$this->trigger( 'saved' );
-
 		$this->flush_cache();
 
 		$this->sync_original();
+
+		$this->trigger( 'saved' );
 	}
 
 	/**
@@ -548,6 +559,15 @@ abstract class Model implements Arrayable, Jsonable, \ArrayAccess, \JsonSerializ
 	 */
 	public function get_key_name() {
 		return $this->primary_key;
+	}
+
+	/**
+	 * Return the object type name.
+	 *
+	 * @return string
+	 */
+	public function get_object_type() {
+		return $this->object_type;
 	}
 
 	/**

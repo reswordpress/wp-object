@@ -163,4 +163,13 @@ abstract class Query {
 
 		return $key;
 	}
+
+	/**
+	 * Returns the query_vars as array.
+	 *
+	 * @return array
+	 */
+	public function to_array() {
+		return $this->query_vars->to_array();
+	}
 }

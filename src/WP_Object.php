@@ -2,54 +2,18 @@
 namespace Awethemes\WP_Object;
 
 use Awethemes\WP_Object\Utils\Utils;
+use Awethemes\WP_Object\Utils\Object_Data;
 
 class WP_Object extends Model {
 	use Deprecated\Metadata;
 	use Deprecated\Deprecated;
 
 	/**
-	 * Store the ID.
-	 *
-	 * @var int
-	 */
-	protected $id;
-
-	/**
-	 * Name of object type.
-	 *
-	 * @var string
-	 */
-	protected $object_type = 'post';
-
-	/**
-	 * The WordPress type for object, Ex: "post" and "term".
-	 *
-	 * @var string
-	 */
-	protected $wp_type = 'post';
-
-	/**
-	 * Prefix for hooks.
-	 *
-	 * @var string
-	 */
-	protected $prefix = 'wp';
-
-	/**
-	 * WP Object (WP_Post, WP_Term, etc...) instance.
+	 * The object instance data.
 	 *
 	 * @var mixed
 	 */
 	protected $instance_data;
-
-	/**
-	 * Constructor.
-	 *
-	 * @param mixed $object The object instance or ID.
-	 */
-	public function __construct( $object = null ) {
-		parent::__construct( $object ?: [] );
-	}
 
 	/**
 	 * Initialize the object.
@@ -61,13 +25,12 @@ class WP_Object extends Model {
 			return;
 		}
 
-		$this->id = Utils::parse_object_id( $object );
+		if ( $id = Utils::parse_object_id( $object ) ) {
+			$this->attributes[ $this->get_key_name() ] = $id;
 
-		// Setup the wp core object instance.
-		if ( ! is_null( $this->id ) ) {
 			$this->setup_instance();
 
-			$this->exists = ! is_null( $this->instance_data );
+			$this->exists = (bool) $this->instance_data;
 
 			if ( $this->exists() ) {
 				$this->setup_metadata();
@@ -82,20 +45,12 @@ class WP_Object extends Model {
 	 * @return void
 	 */
 	protected function setup_instance() {
-		switch ( $this->wp_type ) {
-			case 'post':
-				$wp_post = get_post( $this->get_id() );
-				if ( ! is_null( $wp_post ) && get_post_type( $wp_post->ID ) === $this->object_type ) {
-					$this->set_instance( $wp_post );
-				}
-				break;
+		if ( ! $key = $this->get_key() ) {
+			return;
+		}
 
-			case 'term':
-				$wp_term = get_term( $this->get_id(), $this->object_type );
-				if ( ! is_null( $wp_term ) && ! is_wp_error( $wp_term ) ) {
-					$this->set_instance( $wp_term );
-				}
-				break;
+		if ( $instance = $this->new_query_builder()->raw( $key ) ) {
+			$this->instance_data = new Object_Data( $instance );
 		}
 	}
 
@@ -133,13 +88,13 @@ class WP_Object extends Model {
 	 * @return void
 	 */
 	protected function finish_save() {
-		parent::finish_save();
-
 		$this->perform_update_metadata(
 			$this->recently_created ? $this->get_dirty() : $this->get_changes()
 		);
 
 		$this->resetup();
+
+		parent::finish_save();
 	}
 
 	/**
@@ -156,32 +111,6 @@ class WP_Object extends Model {
 	}
 
 	/**
-	 * Flush the cache or whatever if necessary.
-	 *
-	 * @return void
-	 */
-	protected function flush_cache() {
-		$this->clean_cache();
-	}
-
-	/**
-	 * Clean object cache after saved.
-	 *
-	 * @return void
-	 */
-	protected function clean_cache() {}
-
-	/**
-	 * Helper: Prefix for action and filter hooks for this object.
-	 *
-	 * @param  string $hook_name Hook name without prefix.
-	 * @return string
-	 */
-	protected function prefix( $hook_name ) {
-		return sprintf( '%s/%s/%s', $this->prefix, $this->object_type, $hook_name );
-	}
-
-	/**
 	 * {@inheritdoc}
 	 */
 	public function new_query() {
@@ -194,38 +123,13 @@ class WP_Object extends Model {
 	}
 
 	/**
-	 * Return the object type name.
-	 *
-	 * @return string
-	 */
-	public function get_object_type() {
-		return $this->object_type;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function get_key() {
-		$key = parent::get_key();
-
-		return $key ?: $this->id;
-	}
-
-	/**
-	 * {@inheritdoc}
-	 */
-	public function to_array() {
-		if ( array_key_exists( 'id', $attributes = $this->get_attributes() ) ) {
-			return $attributes;
-		}
-
-		return array_merge( [ 'id' => $this->get_id() ], $attributes );
-	}
-
-	/**
 	 * {@inheritdoc}
 	 */
 	public function __get( $key ) {
+		if ( 'id' === $key ) {
+			return $this->get_key();
+		}
+
 		if ( 'instance' === $key ) {
 			return $this->instance_data;
 		}

@@ -25,6 +25,15 @@ class Test_Model_Query extends WP_UnitTestCase {
 		$this->assertNull( ModelPageStub::find( $posts[0] ) );
 	}
 
+	public function testQueryMagicCall() {
+		$query_args = ModelPageStub::query()
+			->post_in( 1 )
+			->to_array();
+
+		$this->assertInternalType( 'array', $query_args );
+		$this->assertInternalType( 'array', ModelDBStub::query()->where('id', '1')->to_array() );
+	}
+
 	public function testQueryTerm() {
 		$cates = $this->factory->term->create_many( 5, [ 'taxonomy' => 'category' ] );
 		$tags  = $this->factory->term->create_many( 12, [ 'taxonomy' => 'post_tag' ] );

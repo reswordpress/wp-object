@@ -4,6 +4,7 @@ use Awethemes\Database\Database;
 use Awethemes\WP_Object\Query\Builder;
 use Awethemes\WP_Object\Query\DB_Query;
 use Awethemes\WP_Object\Query\Post_Query;
+use Awethemes\WP_Object\Query\Query_Vars;
 use Awethemes\WP_Object\Query\Term_Query;
 
 class Query_Builder_Test extends WP_UnitTestCase {
@@ -16,7 +17,7 @@ class Query_Builder_Test extends WP_UnitTestCase {
 		$builder = new Builder( new Post_Query() );
 
 		$vars = $builder->get_query()->get_query_vars();
-		$this->assertInstanceOf( \Awethemes\WP_Object\Query\Query_Vars::class, $vars );
+		$this->assertInstanceOf( Query_Vars::class, $vars );
 
 		$builder->select('ID')->take( 10 )->skip( 5 )->orderby('ID', 'ASC');
 		$this->assertEquals( 'ID', $vars['fields'] );
@@ -50,7 +51,7 @@ class Query_Builder_Test extends WP_UnitTestCase {
 		$builder = new Builder( new Term_Query() );
 
 		$vars = $builder->get_query()->get_query_vars();
-		$this->assertInstanceOf( \Awethemes\WP_Object\Query\Query_Vars::class, $vars );
+		$this->assertInstanceOf( Query_Vars::class, $vars );
 
 		$builder->select('term_id')->take( 10 )->skip( 5 )->orderby('term_id', 'ASC');
 		$this->assertEquals( 'term_id', $vars['fields'] );

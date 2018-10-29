@@ -5,17 +5,6 @@ use Awethemes\WP_Object\Utils\Utils;
 
 trait Deprecated {
 	/**
-	 * Returns the attributes were changed but only in scope of $changes.
-	 *
-	 * @param  array        $changes    Scope of attributes changes.
-	 * @param  string|array $attributes The attributes.
-	 * @return array
-	 */
-	protected function get_changes_only( array $changes, $attributes ) {
-		return array_intersect( (array) $attributes, array_keys( $changes ) );
-	}
-
-	/**
 	 * Parse the object_id.
 	 *
 	 * @param  mixed $object The object.
@@ -43,5 +32,16 @@ trait Deprecated {
 	 */
 	protected function update_the_post( array $post_data ) {
 		return Utils::update_the_post( $this->get_id(), $post_data );
+	}
+
+	/**
+	 * Returns the attributes were changed but only in scope of $changes.
+	 *
+	 * @param  array        $changes    Scope of attributes changes.
+	 * @param  string|array $attributes The attributes.
+	 * @return array
+	 */
+	protected function get_changes_only( array $changes, $attributes ) {
+		return array_intersect( (array) $attributes, array_keys( $changes ) );
 	}
 }

@@ -1,5 +1,6 @@
 <?php
 
+use Awethemes\WP_Object\Query\Post_Query;
 use Awethemes\WP_Object\WP_Object;
 
 class WP_Object_Test extends WP_UnitTestCase {
@@ -25,14 +26,14 @@ class WP_Object_Test extends WP_UnitTestCase {
 	public function testSetAndSet() {
 		$object = new AweBooking_Post_WP_Object( $this->got );
 
-		$this->assertEquals($object['title'], 'Game of Thrones');
-		$this->assertEquals($object->title, 'Game of Thrones');
+		$this->assertEquals('Game of Thrones', $object['title']);
+		$this->assertEquals('Game of Thrones', $object->title);
 
-		$this->assertEquals($object['description'], 'Season 7');
-		$this->assertEquals($object->description, 'Season 7');
+		$this->assertEquals('Season 7', $object['description']);
+		$this->assertEquals('Season 7', $object->description);
 
-		$this->assertEquals($object['episodes'], '7');
-		$this->assertEquals($object->episodes, '7');
+		$this->assertEquals('7', $object['episodes']);
+		$this->assertEquals('7', $object->episodes);
 
 		$getOnly = $object->only('title', 'description');
 		$getOnlySame = $object->only(['title', 'description']);
@@ -191,6 +192,9 @@ class WP_Object_Test extends WP_UnitTestCase {
 }
 
 class AweBooking_Post_WP_Object extends WP_Object {
+	protected $object_type = 'post';
+	protected $meta_type = 'post';
+
 	protected $attributes = [
 		'title' => '',
 		'description' => '',
@@ -204,8 +208,8 @@ class AweBooking_Post_WP_Object extends WP_Object {
 	];
 
 	protected function setup() {
-		$this['title'] = $this->instance->post_title;
-		$this['description'] = $this->instance->post_excerpt;
+		$this['title'] = $this->instance['post_title'];
+		$this['description'] = $this->instance['post_excerpt'];
 	}
 
 	protected function doing_insert( $atts ) {
@@ -229,5 +233,17 @@ class AweBooking_Post_WP_Object extends WP_Object {
 
 	public function test_get_changes_only($a, $b) {
 		return $this->get_changes_only($a, $b);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	public function new_query() {
+		return new Post_Query( [
+			'post_type'           => $this->object_type,
+			'no_found_rows'       => true,
+			'ignore_sticky_posts' => true,
+			'posts_per_page'      => -1,
+		] );
 	}
 }

@@ -37,7 +37,7 @@ trait Metadata {
 			return $this->meta_type;
 		}
 
-		return $this->wp_type;
+		return null;
 	}
 
 	/**

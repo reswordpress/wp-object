@@ -56,6 +56,15 @@ class Post extends WP_Object {
 	}
 
 	/**
+	 * Return the object type name.
+	 *
+	 * @return string
+	 */
+	public function get_object_type() {
+		return $this->get_post_type();
+	}
+
+	/**
 	 * {@inheritdoc}
 	 */
 	public function new_query() {
